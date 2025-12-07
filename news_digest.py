@@ -16,13 +16,6 @@ from openai import OpenAI
 
 RSS_FEEDS = [
     "https://news.google.com/rss/search?q=site:business-standard.com&hl=en-IN&gl=IN&ceid=IN:en",
-    "https://news.google.com/rss/search?q=site:economictimes.indiatimes.com&hl=en-IN&gl=IN&ceid=IN:en",
-    "https://news.google.com/rss/search?q=site:hindustantimes.com+business&hl=en-IN&gl=IN&ceid=IN:en",
-    "https://news.google.com/rss/search?q=site:moneycontrol.com&hl=en-IN&gl=IN&ceid=IN:en",
-    "https://news.google.com/rss/search?q=site:businesstoday.in&hl=en-IN&gl=IN&ceid=IN:en",
-    "https://news.google.com/rss/search?q=site:livemint.com&hl=en-IN&gl=IN&ceid=IN:en",
-    "https://news.google.com/rss/search?q=site:indianexpress.com+business&hl=en-IN&gl=IN:en",
-    "https://news.google.com/rss/search?q=site:thehindubusinessline.com&hl=en-IN&gl=IN:en",
 ]
 
 # Keep this conservative so we don't blow context
