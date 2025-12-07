@@ -189,7 +189,7 @@ If no link is available, omit that line.
 
 --------------------------------------------------------
 📌 SECTION: 1 Monetizable Idea of the Day
-Provide ONE simple, actionable money-making idea based on:
+Provide two simple, actionable money-making idea based on:
 - current business trends,
 - opportunities emerging from the news,
 - gaps in consumer behavior,
@@ -220,7 +220,7 @@ Format:
 
 --------------------------------------------------------
 📌 SECTION: 1 Communication Upgrade of the Day
-Give ONE powerful communication technique that makes someone:
+Give Five powerful communication technique that makes someone:
 - better at negotiation,
 - clearer in speech,
 - better at leadership communication,
