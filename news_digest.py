@@ -134,12 +134,15 @@ TASK:
    IGNORE:
    - generic politics and elections unless they directly affect economy/business
    - social issues, crime, human interest, environment unless immediate business impact
+   - celebrity/lifestyle/gossip content (weddings, outfits, personal life) even if it mentions jewellery
    - generic editorials without concrete economic or business implication
 
    COVERAGE & SIZE RULES:
    - You are seeing up to 100 stories from many different [Source: ...] feeds.
-   - From these, you MUST select BETWEEN 30 AND 50 stories in total.
+   - From these, you MUST select BETWEEN 25 AND 30 stories in total.
+   - Aim for EXACTLY 30 stories when possible.
    - Never output fewer than 25 stories unless there genuinely are not enough relevant items.
+   - If you are unsure whether a story is important, ERR ON THE SIDE OF INCLUDING IT so that you reach the target count.
    - For each distinct [Source: ...] in the input, TRY to include at least one good story from that source, if any exist.
    - Distribute stories across the sections below so that, where possible, EACH section has AT LEAST 5 stories.
      If a section truly has fewer relevant stories, fill other sections more.
@@ -149,7 +152,11 @@ TASK:
      3) important global events,
      4) jewellery industry news (India + global).
 
-2) Group selected stories into up to 4 sections and each section should have minimum 5 stories with above criteria (you can skip a section ONLY if it has zero relevant stories):
+   BREVITY RULE:
+   - Keep each bullet (What’s happening / Why it’s happening / Why it matters) to ONE short sentence.
+   - Do NOT write long paragraphs. Think of this as a rapid-scan briefing.
+
+2) Group selected stories into up to 4 sections (you can skip a section ONLY if it has zero relevant stories):
 
    A. 🇮🇳 India – Economy & Markets
    B. 🇮🇳 India – Corporate, Sectors, Startups & Deals
@@ -182,7 +189,7 @@ If no link is available, omit that line.
 
 --------------------------------------------------------
 📌 SECTION: 1 Monetizable Idea of the Day
-Provide 2 simple, actionable money-making idea based on:
+Provide ONE simple, actionable money-making idea based on:
 - current business trends,
 - opportunities emerging from the news,
 - gaps in consumer behavior,
@@ -213,7 +220,7 @@ Format:
 
 --------------------------------------------------------
 📌 SECTION: 1 Communication Upgrade of the Day
-Give 5 powerful communication technique that makes someone:
+Give ONE powerful communication technique that makes someone:
 - better at negotiation,
 - clearer in speech,
 - better at leadership communication,
@@ -260,8 +267,8 @@ RULES:
         ],
     )
 
-    # This returns the entire text output as a single string
     return response.output_text
+
 
 
 
