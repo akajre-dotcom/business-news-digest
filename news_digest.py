@@ -48,7 +48,7 @@ MAX_ITEMS = 70   # total items across all feeds
 def fetch_news():
     """Fetch recent headlines + summaries from all RSS feeds."""
     items = []
-    PER_FEED_LIMIT = 6  # max items per feed
+    PER_FEED_LIMIT = 15  # max items per feed
 
     for url in RSS_FEEDS:
         feed = feedparser.parse(url)
