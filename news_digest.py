@@ -41,7 +41,7 @@ RSS_FEEDS = [
     "http://feeds.reuters.com/news/economy",
 ]
 
-MAX_ITEMS = 30  # upper limit of headlines to send to AI in one batch
+MAX_ITEMS = 100  # upper limit of headlines to send to AI in one batch
 
 
 # =======================
@@ -56,8 +56,8 @@ def fetch_news():
         feed = feedparser.parse(url)
         source_name = feed.feed.get("title", "Unknown Source")
 
-        # Take first few items from each feed
-        for entry in feed.entries[:10]:
+        # Take first few items from each feed (limit: 5)
+        for entry in feed.entries[:5]:
             title = entry.get("title", "").strip()
             summary = entry.get("summary", "").strip()
             link = entry.get("link", "").strip()
@@ -73,8 +73,8 @@ def fetch_news():
                 }
             )
 
-    # Cap the total count
     return items[:MAX_ITEMS]
+
 
 
 def build_headlines_text(items):
