@@ -22,6 +22,7 @@ RSS_FEEDS = [
     "https://www.livemint.com/rss/marketsRSS",
     "https://www.livemint.com/rss/industryRSS",
     "https://www.livemint.com/rss/moneyRSS",
+    "https://news.google.com/rss/search?q=site:moneycontrol.com+jewellery",
 
     # --- Indian: Business Standard ---
     "https://www.business-standard.com/rss/latest.rss",
@@ -139,19 +140,20 @@ TASK:
    A. 🇮🇳 India – Economy & Markets
    B. 🇮🇳 India – Corporate, Sectors, Startups & Deals
    C. 🌏 Global – Markets & Macro
+   D. Jewellery Industry ( India & Global )
 
 3) For EACH story, output in this HTML structure:
 
    <div class="story">
      <h3>HEADLINE (Source)</h3>
      <ul>
-       <li><b>Cause:</b> short clear explanation of what led to this.</li>
-       <li><b>Effect:</b> what is happening / who is impacted.</li>
-       <li><b>Why it matters:</b> explain in very simple terms like to a smart 15-year-old,
-           focusing on business/economy/markets impact and long-term implications.</li>
+       <li><b>What’s happening:</b> short, clear description of the news in 1–2 lines.</li>
+       <li><b>Why it’s happening:</b> the main drivers, decisions, or forces behind this.</li>
+       <li><b>Why it matters (for business/markets):</b> explain in very simple terms like to a smart 15-year-old, focusing on impact to economy, sectors, companies, investors, or policy.</li>
      </ul>
      <p><a href="LINK_FROM_INPUT" target="_blank">Read more →</a></p>
    </div>
+
 
 Use the "Link:" field in the input as the href for the “Read more →” link.
 If no link is available, omit that line.
