@@ -10,10 +10,27 @@ from openai import OpenAI
 
 # 1. SETTINGS (you can change RSS feeds later)
 RSS_FEEDS = [
-    "https://feeds.a.dj.com/rss/RSSMarketsMain.xml",   # WSJ Markets
-    "https://www.livemint.com/rss/markets",            # LiveMint Markets
-    "https://www.reutersagency.com/feed/?best-topics=business-finance&post_type=best",  # Reuters business
+    # India Business News
+    "https://www.livemint.com/rss/marketsRSS",
+    "https://www.livemint.com/rss/companiesRSS",
+    "https://www.business-standard.com/rss/latest.rss",
+    "https://b2b.economictimes.indiatimes.com/rss/topstories",
+
+    # Indian Editorials
+    "https://www.thehindu.com/opinion/editorial/feeder/default.rss",
+    "https://www.financialexpress.com/feed/",
+
+    # Keyword-filtered editorials (Google News RSS magic)
+    "https://news.google.com/rss/search?q=india+business+editorial",
+    "https://news.google.com/rss/search?q=indian+economy+analysis",
+    "https://news.google.com/rss/search?q=economic+times+editorial",
+    "https://news.google.com/rss/search?q=business+standard+editorial",
+
+    # Global Business
+    "https://www.reutersagency.com/feed/?best-topics=business-finance&post_type=best"
 ]
+
+
 
 MAX_ITEMS = 20  # how many headlines we send to the AI max
 
