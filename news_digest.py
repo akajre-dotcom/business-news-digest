@@ -20,31 +20,38 @@ from openai import OpenAI
 # =======================
 
 RSS_FEEDS = [
-    # --- Livemint (official RSS)
-    "https://www.livemint.com/rss/newsRSS",
+    # --- Livemint (updated official RSS, no 'RSS' suffix) ---
+    "https://www.livemint.com/rss/news",
+    "https://www.livemint.com/rss/companies",
+    "https://www.livemint.com/rss/markets",
+    "https://www.livemint.com/rss/industry",
+    "https://www.livemint.com/rss/money",
+
+    # --- Business Standard ---
     "https://www.business-standard.com/rss/latest.rss",
+
+    # --- Economic Times (default) ---
     "https://economictimes.indiatimes.com/rssfeedsdefault.cms",
-    "https://www.hindustantimes.com/feeds/rss/business/rssfeed.xml",   
+
+    # --- Hindustan Times (Business – alternative RSS) ---
+    "http://feeds.hindustantimes.com/HT-Business?format=xml",
+
+    # --- Indian Express (Business main) ---
     "https://indianexpress.com/section/business/feed/",
 
-    # --- Jewellery (Google News – corrected)
+    # --- Jewellery / Gold / Gems / Diamond retail (Google News) ---
     "https://news.google.com/rss/search?q=jewellery+OR+gold+OR+gems+OR+diamond+retail&hl=en-IN&gl=IN&ceid=IN:en",
 
-    # --- Livemint detailed feeds
-    "https://www.livemint.com/rss/companiesRSS",
-    "https://www.livemint.com/rss/marketsRSS",
-    "https://www.livemint.com/rss/industryRSS",
-    "https://www.livemint.com/rss/moneyRSS",
-
-    # --- Economic Times (Economy)
-    "https://economictimes.indiatimes.com/rssfeeds/1373380680.cms",
-
-    # --- Indian Express (Business – Markets)
+    # --- Indian Express (Business – Markets) ---
     "https://indianexpress.com/section/business/market/feed/",
 
-    # --- Moneycontrol (via Google News – Markets focused)
+    # --- Economic Times (Economy) ---
+    "https://economictimes.indiatimes.com/rssfeeds/1373380680.cms",
+
+    # --- Moneycontrol (Markets via Google News) ---
     "https://news.google.com/rss/search?q=site:moneycontrol.com+markets&hl=en-IN&gl=IN&ceid=IN:en",
 ]
+
 
 
 # Keep this moderate so we don't blow context
@@ -58,7 +65,7 @@ MAX_ITEMS = 70   # total items across all feeds
 def fetch_news():
     """Fetch recent headlines + summaries from all RSS feeds."""
     items = []
-    PER_FEED_LIMIT = 15  # max items per feed
+    PER_FEED_LIMIT = 6  # max items per feed
 
     for url in RSS_FEEDS:
         feed = feedparser.parse(url)
