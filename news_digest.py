@@ -10,24 +10,20 @@ from openai import OpenAI
 
 # 1. SETTINGS (you can change RSS feeds later)
 RSS_FEEDS = [
-    # India Business News
+    # India – High-quality Business & Markets
     "https://www.livemint.com/rss/marketsRSS",
     "https://www.livemint.com/rss/companiesRSS",
-    "https://www.business-standard.com/rss/latest.rss",
-    "https://b2b.economictimes.indiatimes.com/rss/topstories",
+    "https://www.business-standard.com/rss/finance.rss",
+    "https://www.business-standard.com/rss/markets.rss",
+    "https://www.business-standard.com/rss/economy-policy.rss",
+    "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms",
+    "https://economictimes.indiatimes.com/news/economy/rssfeeds/1373380680.cms",
+    "https://economictimes.indiatimes.com/industry/rssfeeds/13352306.cms",
 
-    # Indian Editorials
-    "https://www.thehindu.com/opinion/editorial/feeder/default.rss",
-    "https://www.financialexpress.com/feed/",
-
-    # Keyword-filtered editorials (Google News RSS magic)
-    "https://news.google.com/rss/search?q=india+business+editorial",
-    "https://news.google.com/rss/search?q=indian+economy+analysis",
-    "https://news.google.com/rss/search?q=economic+times+editorial",
-    "https://news.google.com/rss/search?q=business+standard+editorial",
-
-    # Global Business
-    "https://www.reutersagency.com/feed/?best-topics=business-finance&post_type=best"
+    # Global business & finance
+    "https://www.reutersagency.com/feed/?best-topics=business-finance&post_type=best",
+    "https://www.reuters.com/business/feed", 
+    "https://www.reuters.com/markets/feed",
 ]
 
 
@@ -83,15 +79,32 @@ Here are recent business & markets headlines and summaries:
 {headlines_text}
 
 TASK:
-1. Pick the 7–12 most important stories (global + India).
-2. For each chosen story, output in this exact format:
+You are to pick ONLY business-critical news:
+- corporate earnings
+- markets (stocks, bonds, commodities, global markets)
+- RBI, inflation, GDP, macroeconomic indicators
+- business policy changes
+- startup funding, acquisitions, IPO announcements
+- global business events (India, US, Europe, China)
+- Gold & Jewellery Retail & Supply chain news
+- Gold Jewllery Industry news
+
+DO NOT include:
+- political commentary
+- social issues
+- human rights issues
+- general editorials
+- non-business opinion pieces
+- crime, lifestyle, or general news
+
+Output format (mandatory): If someone reading should get insight and knowledge
 
 ## Headline (Source)
+• Topic:
 • Cause:
 • Effect:
-• Why this matters: (simple explanation like to a smart 15-year-old, first-principles, 1–2 lines)
+• Why this matters for business / economy:
 
-3. No jargon. No extra commentary outside this format.
 """
 
     response = client.responses.create(
