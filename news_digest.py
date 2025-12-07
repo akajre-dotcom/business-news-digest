@@ -102,8 +102,9 @@ def build_headlines_text(items):
 def ask_ai_for_digest(headlines_text: str) -> str:
     """
     Ask OpenAI to:
-    - pick only true business/markets/economy/IPO stories
-    - group into India vs Global vs Deals/Funding
+    - see up to 100 headlines from multiple feeds
+    - pick ~30 of the most important business/economy/markets/jewellery stories
+    - try to cover all sections and sources
     - output clean HTML (no <html>/<body>, just inner content)
     """
 
@@ -135,12 +136,20 @@ TASK:
    - social issues, crime, human interest, environment unless immediate business impact
    - generic editorials without concrete economic or business implication
 
-   COVERAGE RULE:
-   - For each distinct [Source: ...] in the input, try to select AT LEAST ONE relevant story from that source, if any exist.
-   - In total, select AT LEAST 5 stories and ideally 10–20 of the most important ones.
-   - If a source has no clearly relevant business/economy/markets stories, you may skip that source.
+   COVERAGE & SIZE RULES:
+   - You are seeing up to 100 stories from many different [Source: ...] feeds.
+   - From these, you MUST select BETWEEN 25 AND 30 stories in total.
+   - Never output fewer than 25 stories unless there genuinely are not enough relevant items.
+   - For each distinct [Source: ...] in the input, TRY to include at least one good story from that source, if any exist.
+   - Distribute stories across the sections below so that, where possible, EACH section has AT LEAST 5 stories.
+     If a section truly has fewer relevant stories, fill other sections more.
+   - Prioritise:
+     1) big macro / policy / market moves,
+     2) key corporate / sector / funding / IPO updates,
+     3) important global events,
+     4) jewellery industry news (India + global).
 
-2) Group selected stories into up to 4 sections (you can skip a section if empty):
+2) Group selected stories into up to 4 sections (you can skip a section ONLY if it has zero relevant stories):
 
    A. 🇮🇳 India – Economy & Markets
    B. 🇮🇳 India – Corporate, Sectors, Startups & Deals
@@ -161,7 +170,6 @@ TASK:
 
 Use the "Link:" field in the input as the href for the “Read more →” link.
 If no link is available, omit that line.
-
 
 4) Output valid HTML ONLY, with this structure:
 
@@ -193,6 +201,67 @@ RULES:
 
     # This returns the entire text output as a single string
     return response.output_text
+5) AFTER the 4 news sections, append two additional AI-generated sections:
+
+--------------------------------------------------------
+📌 **SECTION: 1 Monetizable Idea of the Day**
+Provide ONE simple, actionable money-making idea based on:
+- current business trends,
+- opportunities emerging from the news,
+- gaps in consumer behavior,
+- AI/tech tools,
+- jewellery industry trends,
+- global patterns.
+
+Make it:
+- easy to understand,
+- executable by 1 person with minimal/zero money,
+- specific (not generic advice),
+- with 3–5 concrete steps.
+
+Format:
+
+<h2>💡 Monetizable Idea of the Day</h2>
+<div class="section">
+  <div class="story">
+    <h3>IDEA TITLE</h3>
+    <ul>
+      <li><b>What it is:</b> brief explanation.</li>
+      <li><b>Why this opportunity exists now:</b> simple cause/effect logic.</li>
+      <li><b>How to execute:</b> 3–5 steps.</li>
+      <li><b>Example:</b> 1 real or realistic business already doing this.</li>
+    </ul>
+  </div>
+</div>
+
+--------------------------------------------------------
+📌 **SECTION: 1 Communication Upgrade of the Day**
+Give ONE powerful communication technique that makes someone:
+- better at negotiation,
+- clearer in speech,
+- better at leadership communication,
+- better at sales/persuasion,
+- better at writing simple business English.
+
+Keep it:
+- short,
+- highly practical,
+- something the reader can use immediately.
+
+Format:
+
+<h2>🗣 Communication Upgrade of the Day</h2>
+<div class="section">
+  <div class="story">
+    <h3>SKILL NAME</h3>
+    <ul>
+      <li><b>What it is:</b> simple definition.</li>
+      <li><b>Why it works:</b> psychological/business principle.</li>
+      <li><b>How to apply:</b> 2–3 steps or examples.</li>
+    </ul>
+  </div>
+</div>
+
 
 
 # =======================
