@@ -138,7 +138,7 @@ TASK:
 
    COVERAGE & SIZE RULES:
    - You are seeing up to 100 stories from many different [Source: ...] feeds.
-   - From these, you MUST select BETWEEN 25 AND 30 stories in total.
+   - From these, you MUST select BETWEEN 30 AND 50 stories in total.
    - Never output fewer than 25 stories unless there genuinely are not enough relevant items.
    - For each distinct [Source: ...] in the input, TRY to include at least one good story from that source, if any exist.
    - Distribute stories across the sections below so that, where possible, EACH section has AT LEAST 5 stories.
@@ -149,7 +149,7 @@ TASK:
      3) important global events,
      4) jewellery industry news (India + global).
 
-2) Group selected stories into up to 4 sections (you can skip a section ONLY if it has zero relevant stories):
+2) Group selected stories into up to 4 sections and each section should have minimum 5 stories with above criteria (you can skip a section ONLY if it has zero relevant stories):
 
    A. 🇮🇳 India – Economy & Markets
    B. 🇮🇳 India – Corporate, Sectors, Startups & Deals
@@ -182,7 +182,7 @@ If no link is available, omit that line.
 
 --------------------------------------------------------
 📌 SECTION: 1 Monetizable Idea of the Day
-Provide ONE simple, actionable money-making idea based on:
+Provide 2 simple, actionable money-making idea based on:
 - current business trends,
 - opportunities emerging from the news,
 - gaps in consumer behavior,
@@ -213,7 +213,7 @@ Format:
 
 --------------------------------------------------------
 📌 SECTION: 1 Communication Upgrade of the Day
-Give ONE powerful communication technique that makes someone:
+Give 5 powerful communication technique that makes someone:
 - better at negotiation,
 - clearer in speech,
 - better at leadership communication,
