@@ -1,66 +1,76 @@
 import os
 import smtplib
 import ssl
-from datetime import datetime
-
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-
+from datetime import datetime
 
 import feedparser
+import pytz
 from openai import OpenAI
 
 
-# 1. SETTINGS (you can change RSS feeds later)
-RSS_FEEDS = [
-    # India – High-quality Business & Markets
-    "https://www.livemint.com/rss/marketsRSS",
-    "https://www.livemint.com/rss/companiesRSS",
-    "https://www.business-standard.com/rss/finance.rss",
-    "https://www.business-standard.com/rss/markets.rss",
-    "https://www.business-standard.com/rss/economy-policy.rss",
-    "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms",
-    "https://economictimes.indiatimes.com/news/economy/rssfeeds/1373380680.cms",
-    "https://economictimes.indiatimes.com/industry/rssfeeds/13352306.cms",
+# =======================
+# 1. RSS SOURCES
+# =======================
 
-    # Global business & finance
-    "https://www.reutersagency.com/feed/?best-topics=business-finance&post_type=best",
-    "https://www.reuters.com/business/feed", 
-    "https://www.reuters.com/markets/feed",
+# ⚠️ IMPORTANT:
+# Replace the example URLs below with the RSS_FEEDS list
+# you are already using that gives you good India + global business news.
+RSS_FEEDS = [
+    # Example structure – replace with YOUR actual working feeds:
+    # "https://www.livemint.com/rss/marketsRSS",
+    # "https://www.livemint.com/rss/companiesRSS",
+    # "https://www.business-standard.com/rss/latest.rss",
+    # "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms",
+    # "https://www.reuters.com/business/feed",
 ]
 
+MAX_ITEMS = 30  # upper limit of headlines to send to AI in one batch
 
 
-MAX_ITEMS = 20  # how many headlines we send to the AI max
-
+# =======================
+# 2. FETCH NEWS
+# =======================
 
 def fetch_news():
     """Fetch recent headlines from all RSS feeds."""
     items = []
+
     for url in RSS_FEEDS:
         feed = feedparser.parse(url)
         source_name = feed.feed.get("title", "Unknown Source")
-        for entry in feed.entries[:10]:  # take first 10 from each
+
+        # Take first few items from each feed
+        for entry in feed.entries[:10]:
             title = entry.get("title", "").strip()
             summary = entry.get("summary", "").strip()
             link = entry.get("link", "").strip()
-            if title:
-                items.append({
+            if not title:
+                continue
+
+            items.append(
+                {
                     "source": source_name,
                     "title": title,
                     "summary": summary,
                     "link": link,
-                })
+                }
+            )
 
-    # cut to max items so prompt is not too long
+    # Cap the total count
     return items[:MAX_ITEMS]
 
 
 def build_headlines_text(items):
-    """Turn news items into a big text block for the AI."""
+    """
+    Turn news items into a text block that is easy for the AI to read.
+    We include source, title, summary, link.
+    """
     lines = []
     for i, item in enumerate(items, start=1):
-        lines.append(f"{i}) [{item['source']}] {item['title']}")
+        lines.append(f"{i}) [Source: {item['source']}]")
+        lines.append(f"   Title: {item['title']}")
         if item["summary"]:
             lines.append(f"   Summary: {item['summary']}")
         if item["link"]:
@@ -69,47 +79,74 @@ def build_headlines_text(items):
     return "\n".join(lines)
 
 
-def ask_ai_for_digest(headlines_text):
-    """Call OpenAI to turn raw headlines into cause–effect digest."""
+# =======================
+# 3. CALL OPENAI – BETTER CONTENT
+# =======================
+
+def ask_ai_for_digest(headlines_text: str) -> str:
+    """
+    Ask OpenAI to:
+    - pick only true business/markets/economy/IPO stories
+    - group into India vs Global vs Deals/Funding
+    - output clean HTML (no <html>/<body>, just inner content)
+    """
+
     api_key = os.environ["OPENAI_API_KEY"]
     client = OpenAI(api_key=api_key)
 
     prompt = f"""
-You are an expert global business analyst.
+You are an expert business & markets analyst.
 
-Here are recent business & markets headlines and summaries:
+You will receive a list of headlines with source, summary and links.
+These are mostly India + global business news.
 
+INPUT HEADLINES:
 {headlines_text}
 
 TASK:
-You are to pick ONLY business-critical news:
-- corporate earnings
-- markets (stocks, bonds, commodities, global markets)
-- RBI, inflation, GDP, macroeconomic indicators
-- business policy changes
-- startup funding, acquisitions, IPO announcements
-- global business events (India, US, Europe, China)
-- Gold & Jewellery Retail & Supply chain news
-- Gold Jewllery Industry news
 
-DO NOT include:
-- political commentary
-- social issues
-- human rights issues
-- general editorials
-- non-business opinion pieces
-- crime, lifestyle, or general news
+1) From these, select ONLY stories that are truly business/economy/markets related:
+   - macroeconomy (GDP, inflation, RBI, Fed, rates, trade, fiscal, deficits)
+   - markets (stocks, bonds, commodities, FX, indices, yields)
+   - business policy & regulation (tax, customs, trade, FDI, industry policy)
+   - corporate & sectors (earnings, expansions, capacity, M&A, capex)
+   - startups, funding, IPOs, exits
+   - global business events that affect markets or Indian economy
 
-Output format (mandatory): If someone reading should get insight and knowledge
+   IGNORE:
+   - generic politics and elections unless they directly affect economy/business
+   - social issues, crime, human interest, environment unless immediate business impact
+   - generic editorials without concrete economic or business implication
 
-## Headline (Source)
+2) Group selected stories into at most 3 sections (you can skip a section if empty):
 
-• Cause:
-• Effect:
-• Why this matters for business / economy:
-• Source link to read more :
-• Date of news released if available :
+   A. 🇮🇳 India – Economy & Markets
+   B. 🇮🇳 India – Corporate, Sectors, Startups & Deals
+   C. 🌏 Global – Markets & Macro
 
+3) For EACH story, output in this HTML structure:
+
+   <div class="story">
+     <h3>HEADLINE (Source)</h3>
+     <ul>
+       <li><b>Cause:</b> short clear explanation of what led to this.</li>
+       <li><b>Effect:</b> what is happening / who is impacted.</li>
+       <li><b>Why it matters:</b> explain in very simple terms like to a smart 15-year-old,
+           focusing on business/economy/markets impact and long-term implications.</li>
+     </ul>
+   </div>
+
+4) Output valid HTML ONLY, with this structure:
+
+   <h2>SECTION TITLE...</h2>
+   <div class="section">
+      ...multiple <div class="story"> blocks...
+   </div>
+
+RULES:
+- Do NOT include <html>, <head>, <body> tags.
+- Do NOT write anything outside these sections.
+- Be concise but insightful, avoid buzzwords.
 """
 
     response = client.responses.create(
@@ -127,11 +164,15 @@ Output format (mandatory): If someone reading should get insight and knowledge
         ],
     )
 
-    # Simple helper: this gives us the whole text in one go
+    # This returns the entire text output as a single string
     return response.output_text
 
 
-def send_email(subject, body_text):
+# =======================
+# 4. SEND NICE HTML EMAIL
+# =======================
+
+def send_email(subject: str, digest_html: str):
     """Send a nicely formatted HTML email with the digest."""
 
     email_from = os.environ["EMAIL_FROM"]
@@ -141,39 +182,35 @@ def send_email(subject, body_text):
     smtp_username = os.environ["SMTP_USERNAME"]
     smtp_password = os.environ["SMTP_PASSWORD"]
 
-    # Time stamp
-    now_utc = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+    # IST timestamp for header inside email
+    ist = pytz.timezone("Asia/Kolkata")
+    now_ist = datetime.now(ist).strftime("%Y-%m-%d %I:%M %p IST")
 
-    # Turn the AI plain-text into HTML (preserve line breaks)
-    body_html = body_text.replace("\n", "<br>")
-
+    # Wrap the AI HTML inside a nicer template
     html = f"""
     <html>
       <body style="margin:0; padding:0; background-color:#f5f5f5;">
-        <div style="max-width:750px; margin:20px auto; font-family:Arial, sans-serif;">
-          <div style="background:#ffffff; border-radius:10px; padding:20px 24px; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        <div style="max-width:800px; margin:20px auto; font-family:Arial, sans-serif;">
+          <div style="background:#ffffff; border-radius:12px; padding:20px 26px; box-shadow:0 2px 10px rgba(0,0,0,0.08);">
             
-            <h2 style="margin-top:0; font-size:22px;">
-              📊 Daily / 6h Business News Digest
-            </h2>
+            <h1 style="margin:0 0 4px 0; font-size:22px; color:#111;">
+              📊 Business News Digest
+            </h1>
             <p style="margin:0; color:#777; font-size:12px;">
-              Generated automatically on <b>{now_utc}</b>
-            </p>
-            
-            <hr style="margin:16px 0; border:none; border-top:1px solid #eee;">
-            
-            <p style="font-size:14px; color:#333; line-height:1.6;">
-              <b>How to read this:</b> Each story is explained as <i>Cause → Effect → Why it matters</i>.
+              Generated automatically on <b>{now_ist}</b> · Cause → Effect → Why it matters
             </p>
 
-            <div style="font-size:14px; color:#111; line-height:1.6; margin-top:8px;">
-              {body_html}
+            <hr style="margin:16px 0; border:none; border-top:1px solid #eee;">
+
+            <div style="font-size:14px; color:#222; line-height:1.6;">
+              {digest_html}
             </div>
 
             <hr style="margin:20px 0; border:none; border-top:1px solid #eee;">
 
-            <p style="font-size:12px; color:#999; margin:0;">
-              🤖 This summary is auto-generated from multiple business news sources.
+            <p style="font-size:11px; color:#999; margin:0;">
+              🤖 This digest is auto-generated from multiple business news sources using AI.
+              Treat it as a starting point, not investment advice.
             </p>
           </div>
         </div>
@@ -186,7 +223,6 @@ def send_email(subject, body_text):
     msg["To"] = email_to
     msg["Subject"] = subject
 
-    # Attach HTML part
     msg.attach(MIMEText(html, "html"))
 
     context = ssl.create_default_context()
@@ -196,18 +232,25 @@ def send_email(subject, body_text):
         server.send_message(msg)
 
 
+# =======================
+# 5. MAIN
+# =======================
 
 def main():
     news_items = fetch_news()
 
     if not news_items:
-        digest_text = "No news items fetched. Check RSS feeds or code."
+        digest_html = "<p>No news items fetched. Check RSS feeds or code.</p>"
     else:
         headlines_text = build_headlines_text(news_items)
-        digest_text = ask_ai_for_digest(headlines_text)
+        digest_html = ask_ai_for_digest(headlines_text)
 
-    subject = "Your Business News Digest (Cause → Effect → Why it matters)"
-    send_email(subject, digest_text)
+    # IST timestamp in subject
+    ist = pytz.timezone("Asia/Kolkata")
+    now_ist = datetime.now(ist).strftime("%Y-%m-%d %I:%M %p IST")
+    subject = f"Business News Digest – {now_ist}"
+
+    send_email(subject, digest_html)
 
 
 if __name__ == "__main__":
