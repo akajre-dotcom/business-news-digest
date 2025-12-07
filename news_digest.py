@@ -14,16 +14,31 @@ from openai import OpenAI
 # 1. RSS SOURCES
 # =======================
 
-# ⚠️ IMPORTANT:
-# Replace the example URLs below with the RSS_FEEDS list
-# you are already using that gives you good India + global business news.
+# Curated list: India-heavy + some global context
 RSS_FEEDS = [
-    # Example structure – replace with YOUR actual working feeds:
-    # "https://www.livemint.com/rss/marketsRSS",
-    # "https://www.livemint.com/rss/companiesRSS",
-    # "https://www.business-standard.com/rss/latest.rss",
-    # "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms",
-    # "https://www.reuters.com/business/feed",
+    # --- Indian: Livemint ---
+    "https://www.livemint.com/rss/newsRSS",
+    "https://www.livemint.com/rss/companiesRSS",
+    "https://www.livemint.com/rss/marketsRSS",
+    "https://www.livemint.com/rss/industryRSS",
+    "https://www.livemint.com/rss/moneyRSS",
+
+    # --- Indian: Business Standard ---
+    "https://www.business-standard.com/rss/latest.rss",
+    "https://www.business-standard.com/rss/markets-106.rss",
+    "https://www.business-standard.com/rss/companies-101.rss",
+    "https://www.business-standard.com/rss/economy-102.rss",
+    "https://www.business-standard.com/rss/finance-103.rss",
+
+    # --- Indian: Economic Times (main + economy) ---
+    "https://economictimes.indiatimes.com/rssfeedsdefault.cms",
+    "https://economictimes.indiatimes.com/rssfeeds/1373380680.cms",  # Economy
+
+    # --- Global: Reuters (business + markets + economy) ---
+    "http://feeds.reuters.com/reuters/businessNews",
+    "http://feeds.reuters.com/reuters/INbusinessNews",
+    "http://feeds.reuters.com/reuters/globalmarketsNews",
+    "http://feeds.reuters.com/news/economy",
 ]
 
 MAX_ITEMS = 30  # upper limit of headlines to send to AI in one batch
@@ -112,6 +127,7 @@ TASK:
    - corporate & sectors (earnings, expansions, capacity, M&A, capex)
    - startups, funding, IPOs, exits
    - global business events that affect markets or Indian economy
+   - Indian jewellery business, industry, gold, supply chain, retail and sales in jewellery
 
    IGNORE:
    - generic politics and elections unless they directly affect economy/business
@@ -134,7 +150,11 @@ TASK:
        <li><b>Why it matters:</b> explain in very simple terms like to a smart 15-year-old,
            focusing on business/economy/markets impact and long-term implications.</li>
      </ul>
+     <p><a href="LINK_FROM_INPUT" target="_blank">Read more →</a></p>
    </div>
+
+Use the "Link:" field in the input as the href for the “Read more →” link.
+If no link is available, omit that line.
 
 4) Output valid HTML ONLY, with this structure:
 
@@ -197,7 +217,7 @@ def send_email(subject: str, digest_html: str):
               📊 Business News Digest
             </h1>
             <p style="margin:0; color:#777; font-size:12px;">
-              Generated automatically on <b>{now_ist}</b> · Cause → Effect → Why it matters
+              Generated automatically on <b>{now_ist}</b> · Cause → Effect · Why it matters
             </p>
 
             <hr style="margin:16px 0; border:none; border-top:1px solid #eee;">
