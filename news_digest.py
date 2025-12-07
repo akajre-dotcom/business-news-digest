@@ -14,7 +14,7 @@ from openai import OpenAI
 # 1. RSS SOURCES
 # =======================
 
-# Curated list: Indian business-heavy via Google News domain search
+# Indian business-heavy via Google News domain search
 RSS_FEEDS = [
     "https://news.google.com/rss/search?q=site:business-standard.com&hl=en-IN&gl=IN&ceid=IN:en",
     "https://news.google.com/rss/search?q=site:economictimes.indiatimes.com&hl=en-IN&gl=IN&ceid=IN:en",
@@ -26,8 +26,8 @@ RSS_FEEDS = [
     "https://news.google.com/rss/search?q=site:thehindubusinessline.com&hl=en-IN&gl=IN&ceid=IN:en",
 ]
 
-# Upper limit of headlines to send to AI in one batch
-MAX_ITEMS = 200
+# Keep this moderate so we don't hit context limits
+MAX_ITEMS = 80  # total items across all feeds
 
 
 # =======================
@@ -37,8 +37,7 @@ MAX_ITEMS = 200
 def fetch_news():
     """Fetch recent headlines from all RSS feeds."""
     items = []
-
-    PER_FEED_LIMIT = 20  # how many items to take from each feed
+    PER_FEED_LIMIT = 12  # per feed
 
     for url in RSS_FEEDS:
         feed = feedparser.parse(url)
@@ -60,25 +59,27 @@ def fetch_news():
                 }
             )
 
-    # Hard cap so we don't blow up tokens
     return items[:MAX_ITEMS]
 
 
 def build_headlines_text(items):
     """
-    Turn news items into a text block that is easy for the AI to read.
-    We include source, title, summary, link.
+    Turn news items into a compact text block for the AI.
+    To save tokens, we use only source, title, link.
     """
     lines = []
     for i, item in enumerate(items, start=1):
         lines.append(f"{i}) [Source: {item['source']}]")
         lines.append(f"   Title: {item['title']}")
-        if item["summary"]:
-            lines.append(f"   Summary: {item['summary']}")
         if item["link"]:
             lines.append(f"   Link: {item['link']}")
-        lines.append("")  # blank line
-    return "\n".join(lines)
+        lines.append("")
+    text = "\n".join(lines)
+
+    # Safety cap on characters to avoid context overflow
+    if len(text) > 12000:
+        text = text[:12000]
+    return text
 
 
 # =======================
@@ -88,10 +89,11 @@ def build_headlines_text(items):
 def ask_ai_for_digest(headlines_text: str) -> str:
     """
     Ask OpenAI to:
-    - see up to MAX_ITEMS headlines from multiple feeds
-    - pick and club the most important business/economy/markets/jewellery stories
-    - never invent stories not present in the input
-    - output STRICT HTML (no <html>/<body>, just inner content)
+    - read many headlines from business sources
+    - pick and club important stories
+    - group into sections
+    - output clean HTML (no <html>/<body>, just inner content)
+    - never invent stories
     """
 
     api_key = os.environ["OPENAI_API_KEY"]
@@ -100,61 +102,37 @@ def ask_ai_for_digest(headlines_text: str) -> str:
     prompt = """
 You are an expert Indian business & markets analyst.
 
-You will receive a list of headlines and summaries from multiple Indian and global business news sources.
+Below is a list of headlines from multiple business news sites.
+This list is your ONLY source of truth. Do NOT invent any stories or links.
 
-INPUT HEADLINES (this is your ONLY source of truth – do NOT invent anything):
+INPUT HEADLINES:
 {headlines_text}
 
------------------------------------------------------
-HARD CONSTRAINTS (MUST OBEY)
------------------------------------------------------
-- Every story you output MUST be directly based on one or more of the INPUT HEADLINES.
-- You MUST NOT invent or add stories that are not present in the input.
-- If a topic is not in the input, completely ignore it.
-- Output MUST be valid HTML only, using the specified structure. No plain text outside HTML tags.
+---------------- TASK ----------------
+1) Select stories that clearly relate to:
+- business, companies, sectors, earnings, funding, IPOs, M&A
+- Indian macroeconomy (GDP, inflation, RBI, fiscal, trade)
+- markets (stocks, bonds, commodities, FX, indices, yields)
+- policy/politics only when it has clear economic or business impact
+- tech/startup/consumer trends with a money or business angle
+- jewellery industry: gold, silver, diamonds, gems, jewellery retail, hallmarking, bullion, supply chain, demand
 
------------------------------------------------------
-1) Select relevant business/economy/markets stories
------------------------------------------------------
-Include stories related to:
-- Indian macroeconomy (GDP, inflation, RBI, rates, trade, fiscal policy)
-- Markets (stocks, bonds, commodities, FX, indices, yields)
-- Business, corporate updates, sectors, earnings, funding, M&A, IPOs
-- Policy or politics only when it has clear economic or business impact
-- Tech, startups, consumer/business trends, wealth, personal finance
-- Global news with implications for India
-- Jewellery industry (retail, gold, silver, diamonds, gems, jewellery retailers, hallmarking, bullion, supply chain, demand)
+Ignore:
+- crime, generic politics, celebrity/lifestyle, sports, weather, air quality, general environment
+  unless there is a direct business/market/jewellery angle.
 
-IGNORE:
-- Pure politics with no economic effect
-- Crime, weather, air quality, general environment, celebrity lifestyle, sports (unless clearly business-related)
-- Any content without a clear business, economic, markets or jewellery angle
+2) CLUB / MERGE duplicates:
+- If multiple headlines are clearly about the same event (e.g., one company, one RBI move, one IPO),
+  merge them into ONE story.
+- Use the clearest headline as the title and combine useful details into the bullets.
+- Do NOT output several separate stories that say almost the same thing.
 
------------------------------------------------------
-2) CLUB / MERGE DUPLICATE OR RELATED STORIES
------------------------------------------------------
-If multiple headlines clearly refer to the same underlying event, you MUST:
+3) Number of stories:
+- After merging, aim for 30–45 stories.
+- If you have fewer distinct stories, output what you have.
+- Do NOT invent extra stories to hit the target.
 
-- Merge them into one unified story.
-- Use the best headline as the title.
-- Combine important details from all related headlines inside the bullets.
-- Do NOT create multiple separate stories that say almost the same thing.
-
-Examples of items to club:
-- Multiple stories about the same RBI policy update.
-- Repeated coverage of a single company’s earnings or IPO.
-- Several headlines about the same market move or corporate event.
-
------------------------------------------------------
-3) Number of stories
------------------------------------------------------
-- After merging duplicates, aim for 40 to 60 stories total.
-- If there are fewer distinct stories available, output as many as exist, but never fewer than 30 if you have 60+ input headlines.
-- Err on the side of INCLUDING more stories if you are unsure.
-
------------------------------------------------------
-4) Sections
------------------------------------------------------
+4) Sections:
 Group stories into these sections:
 
 A. 🇮🇳 India – Economy & Markets
@@ -163,57 +141,45 @@ C. 🌏 Global – Markets & Macro
 D. 💍 Jewellery Industry (India & Global)
 
 Rules:
-- Each story must go into exactly ONE section.
-- If a section has zero relevant stories, omit that section entirely.
-- JEWELLERY SECTION RULE:
-  - Only include stories where the headline or summary clearly mentions jewellery, gold, silver, bullion, diamonds, gems, jewellery retailers, hallmarking or related industry terms.
-  - If there are no such stories in the input, DO NOT create the Jewellery section at all.
+- Each story goes into exactly ONE section.
+- If a section has no relevant stories, omit that section.
+- For the Jewellery section, only include stories that clearly mention jewellery, gold, silver, diamonds,
+  gems, hallmarking, bullion or jewellery retailers. If there are none, omit this section.
 
------------------------------------------------------
-5) Story HTML format (STRICT)
------------------------------------------------------
-For EACH story, output HTML EXACTLY like this:
+5) Story format (STRICT HTML):
+
+For each story, output exactly:
 
 <div class="story">
   <h3>HEADLINE (Source)</h3>
   <ul>
     <li><b>What’s happening:</b> ONE short sentence describing the event.</li>
-    <li><b>Why it’s happening:</b> ONE short sentence explaining the main driver or cause.</li>
-    <li><b>Why it matters (for business/markets):</b> ONE short sentence explained simply like to a smart 15-year-old.</li>
+    <li><b>Why it’s happening:</b> ONE short sentence on the main driver or cause.</li>
+    <li><b>Why it matters (for business/markets):</b> ONE short sentence, explained simply.</li>
   </ul>
   <p><a href="LINK_FROM_INPUT" target="_blank">Read more →</a></p>
 </div>
 
-RULES FOR BULLETS:
-- Each bullet MUST be a single short sentence.
-- No long paragraphs.
-- No jargon; use simple, clear, concrete language.
+Rules:
+- Each bullet is just one short sentence (no long paragraphs).
+- Use simple, clear language (imagine explaining to a smart 15-year-old).
+- For each story, pick one real link from the input headlines. Never invent or modify URLs.
 
-LINK RULE:
-- For each story, pick one URL from the input headlines that describe that story.
-- Use that URL as the link in the “Read more →” line.
-- Never make up or modify URLs.
+6) Overall HTML structure:
 
------------------------------------------------------
-6) Overall HTML structure
------------------------------------------------------
-You MUST output ONLY this pattern (repeat for each section you use):
+For each section you use, output ONLY:
 
-<h2>SECTION TITLE...</h2>
+<h2>SECTION TITLE</h2>
 <div class="section">
   ...many <div class="story"> blocks...
 </div>
 
-- Do NOT include <html>, <head> or <body> tags.
-- Do NOT add any text outside these <h2>, <div class="section">, <div class="story">, <ul>, <li>, <p>, <a>, <b>, <h3> tags.
+Do NOT output <html>, <head> or <body> tags.
+Do NOT output any plain text outside these tags.
 
------------------------------------------------------
-7) Extra Sections at the end
------------------------------------------------------
+7) Extra sections at the end (also in HTML):
 
-After all news sections, append these two blocks IN HTML:
-
-(1) Monetizable Idea of the Day
+Monetizable Idea of the Day:
 
 <h2>💡 Monetizable Idea of the Day</h2>
 <div class="section">
@@ -221,14 +187,14 @@ After all news sections, append these two blocks IN HTML:
     <h3>IDEA TITLE</h3>
     <ul>
       <li><b>What it is:</b> one-sentence explanation.</li>
-      <li><b>Why this opportunity exists now:</b> simple cause/effect linked to current business or tech trends.</li>
+      <li><b>Why this opportunity exists now:</b> one sentence linked to current business or tech trends.</li>
       <li><b>How to execute:</b> 3–5 short, concrete steps that one person with low capital can follow.</li>
-      <li><b>Example:</b> a realistic example of a business or person already doing something similar.</li>
+      <li><b>Example:</b> a realistic example of someone doing something similar.</li>
     </ul>
   </div>
 </div>
 
-(2) Communication Upgrade of the Day
+Communication Upgrade of the Day:
 
 <h2>🗣 Communication Upgrade of the Day</h2>
 <div class="section">
@@ -236,21 +202,18 @@ After all news sections, append these two blocks IN HTML:
     <h3>SKILL NAME</h3>
     <ul>
       <li><b>What it is:</b> clear, simple definition.</li>
-      <li><b>Why it works:</b> one sentence explaining the psychological or business principle.</li>
-      <li><b>How to apply:</b> 2–3 short steps or examples the reader can use today.</li>
+      <li><b>Why it works:</b> one sentence on the psychological or business principle.</li>
+      <li><b>How to apply:</b> 2–3 short, practical steps or examples the reader can use today.</li>
     </ul>
   </div>
 </div>
 
------------------------------------------------------
 FINAL RULES:
------------------------------------------------------
-- Output ONLY valid HTML as described above.
-- Do NOT include any markdown, commentary, or text outside HTML tags.
-- Do NOT invent any stories, numbers or links not present in the input.
+- Use ONLY the HTML tags shown above.
+- No markdown, no prose explanation, no text outside HTML.
+- Do NOT invent any stories, facts, or links not present in the input headlines.
 """
 
-    # Safely inject headlines_text into the prompt
     prompt = prompt.format(headlines_text=headlines_text)
 
     response = client.responses.create(
@@ -289,7 +252,6 @@ def send_email(subject: str, digest_html: str):
     ist = pytz.timezone("Asia/Kolkata")
     now_ist = datetime.now(ist).strftime("%Y-%m-%d %I:%M %p IST")
 
-    # Wrap the AI HTML inside a nicer template
     html = f"""
     <html>
       <body style="margin:0; padding:0; background-color:#f5f5f5;">
@@ -348,7 +310,6 @@ def main():
         headlines_text = build_headlines_text(news_items)
         digest_html = ask_ai_for_digest(headlines_text)
 
-    # IST timestamp in subject
     ist = pytz.timezone("Asia/Kolkata")
     now_ist = datetime.now(ist).strftime("%Y-%m-%d %I:%M %p IST")
     subject = f"Business News Digest – {now_ist}"
