@@ -20,20 +20,30 @@ from openai import OpenAI
 # =======================
 
 RSS_FEEDS = [
-    # 🔥 Zerodha Pulse — BEST curated Indian market news
-    "https://pulse.zerodha.com/feed/",
-
-    # 🔥 Economic Times — Master business/economy feed
-    "https://economictimes.indiatimes.com/rssfeedsdefault.cms",
-
-    # 🔥 Livemint — Markets feed (clean & high signal)
-    "https://www.livemint.com/rss/marketsRSS",
-
-    # 🔥 Business Standard — Official latest feed
+    # --- Livemint (official RSS)
+    "https://www.livemint.com/rss/newsRSS",
     "https://www.business-standard.com/rss/latest.rss",
-
-    # 🔥 Indian Express — Business feed (clean, non-spammy)
+    "https://economictimes.indiatimes.com/rssfeedsdefault.cms",
+    "https://www.hindustantimes.com/feeds/rss/business/rssfeed.xml",   
     "https://indianexpress.com/section/business/feed/",
+
+    # --- Jewellery (Google News – corrected)
+    "https://news.google.com/rss/search?q=jewellery+OR+gold+OR+gems+OR+diamond+retail&hl=en-IN&gl=IN&ceid=IN:en",
+
+    # --- Livemint detailed feeds
+    "https://www.livemint.com/rss/companiesRSS",
+    "https://www.livemint.com/rss/marketsRSS",
+    "https://www.livemint.com/rss/industryRSS",
+    "https://www.livemint.com/rss/moneyRSS",
+
+    # --- Economic Times (Economy)
+    "https://economictimes.indiatimes.com/rssfeeds/1373380680.cms",
+
+    # --- Indian Express (Business – Markets)
+    "https://indianexpress.com/section/business/market/feed/",
+
+    # --- Moneycontrol (via Google News – Markets focused)
+    "https://news.google.com/rss/search?q=site:moneycontrol.com+markets&hl=en-IN&gl=IN&ceid=IN:en",
 ]
 
 
