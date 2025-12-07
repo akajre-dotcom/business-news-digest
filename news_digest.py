@@ -178,33 +178,10 @@ If no link is available, omit that line.
       ...multiple <div class="story"> blocks...
    </div>
 
-RULES:
-- Do NOT include <html>, <head>, <body> tags.
-- Do NOT write anything outside these sections.
-- Be concise but insightful, avoid buzzwords.
-"""
-
-    response = client.responses.create(
-        model="gpt-4o-mini",
-        input=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "input_text",
-                        "text": prompt,
-                    }
-                ],
-            }
-        ],
-    )
-
-    # This returns the entire text output as a single string
-    return response.output_text
 5) AFTER the 4 news sections, append two additional AI-generated sections:
 
 --------------------------------------------------------
-📌 **SECTION: 1 Monetizable Idea of the Day**
+📌 SECTION: 1 Monetizable Idea of the Day
 Provide ONE simple, actionable money-making idea based on:
 - current business trends,
 - opportunities emerging from the news,
@@ -235,7 +212,7 @@ Format:
 </div>
 
 --------------------------------------------------------
-📌 **SECTION: 1 Communication Upgrade of the Day**
+📌 SECTION: 1 Communication Upgrade of the Day
 Give ONE powerful communication technique that makes someone:
 - better at negotiation,
 - clearer in speech,
@@ -261,6 +238,30 @@ Format:
     </ul>
   </div>
 </div>
+
+RULES:
+- Do NOT include <html>, <head>, <body> tags.
+- Do NOT write anything outside these sections.
+- Be concise but insightful, avoid buzzwords.
+"""
+
+    response = client.responses.create(
+        model="gpt-4o-mini",
+        input=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "input_text",
+                        "text": prompt,
+                    }
+                ],
+            }
+        ],
+    )
+
+    # This returns the entire text output as a single string
+    return response.output_text
 
 
 
