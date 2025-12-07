@@ -14,19 +14,46 @@ from openai import OpenAI
 # 1. RSS SOURCES
 # =======================
 
+# Curated India-heavy + some global context (native RSS where possible)
 RSS_FEEDS = [
-    "https://news.google.com/rss/search?q=site:business-standard.com&hl=en-IN&gl=IN&ceid=IN:en",
-    "https://news.google.com/rss/search?q=site:economictimes.indiatimes.com&hl=en-IN&gl=IN&ceid=IN:en",
-    "https://news.google.com/rss/search?q=site:hindustantimes.com+business&hl=en-IN&gl=IN&ceid=IN:en",
+    # --- Livemint (India business, markets, money) ---
+    "https://www.livemint.com/rss/newsRSS",
+    "https://www.livemint.com/rss/companiesRSS",
+    "https://www.livemint.com/rss/marketsRSS",
+    "https://www.livemint.com/rss/moneyRSS",
+
+    # --- Business Standard (India business, markets, economy) ---
+    "https://www.business-standard.com/rss/latest.rss",
+    "https://www.business-standard.com/rss/markets-106.rss",
+    "https://www.business-standard.com/rss/companies-101.rss",
+    "https://www.business-standard.com/rss/economy-102.rss",
+    "https://www.business-standard.com/rss/finance-103.rss",
+
+    # --- Economic Times (India markets + economy) ---
+    "https://economictimes.indiatimes.com/rssfeedsdefault.cms",
+    "https://economictimes.indiatimes.com/rssfeeds/1373380680.cms",  # Economy
+
+    # --- Moneycontrol & Business Today via Google News (no native clean RSS) ---
     "https://news.google.com/rss/search?q=site:moneycontrol.com&hl=en-IN&gl=IN&ceid=IN:en",
     "https://news.google.com/rss/search?q=site:businesstoday.in&hl=en-IN&gl=IN&ceid=IN:en",
-    "https://news.google.com/rss/search?q=site:livemint.com&hl=en-IN&gl=IN&ceid=IN:en",
-    "https://news.google.com/rss/search?q=site:indianexpress.com+business&hl=en-IN&gl=IN:en",
-    "https://news.google.com/rss/search?q=site:thehindubusinessline.com&hl=en-IN&gl=IN:en",
+
+    # --- Indian Express – Business (via Google News) ---
+    "https://news.google.com/rss/search?q=site:indianexpress.com+business&hl=en-IN&gl=IN&ceid=IN:en",
+
+    # --- Hindu BusinessLine (native) ---
+    "https://www.thehindubusinessline.com/feeder/default.rss",
+
+    # --- Global: Reuters business & markets ---
+    "http://feeds.reuters.com/reuters/businessNews",
+    "http://feeds.reuters.com/reuters/globalmarketsNews",
+    "http://feeds.reuters.com/news/economy",
+
+    # --- Jewellery-focused (Moneycontrol via Google News) ---
+    "https://news.google.com/rss/search?q=site:moneycontrol.com+jewellery&hl=en-IN&gl=IN&ceid=IN:en",
 ]
 
-# Keep this conservative so we don't blow context
-MAX_ITEMS = 60   # total items across all feeds
+# Keep this moderate so we don't blow context
+MAX_ITEMS = 70   # total items across all feeds
 
 
 # =======================
@@ -36,7 +63,7 @@ MAX_ITEMS = 60   # total items across all feeds
 def fetch_news():
     """Fetch recent headlines + summaries from all RSS feeds."""
     items = []
-    PER_FEED_LIMIT = 10  # max per feed
+    PER_FEED_LIMIT = 8  # max per feed, many feeds = variety
 
     for url in RSS_FEEDS:
         feed = feedparser.parse(url)
@@ -50,8 +77,8 @@ def fetch_news():
                 continue
 
             # Truncate very long summaries to save space but keep "reason" context
-            if len(summary) > 400:
-                summary = summary[:400] + "..."
+            if len(summary) > 350:
+                summary = summary[:350] + "..."
 
             items.append(
                 {
@@ -72,7 +99,7 @@ def build_headlines_text(items):
     Also enforce an overall character cap to avoid context overflow.
     """
     lines = []
-    char_limit = 12000  # hard cap on total text length
+    char_limit = 9000  # hard cap on total text length for safety with gpt-4o-mini
     current_len = 0
 
     for i, item in enumerate(items, start=1):
@@ -103,7 +130,7 @@ def build_headlines_text(items):
 def ask_ai_for_digest(headlines_text: str) -> str:
     """
     Ask OpenAI to:
-    - read headlines + summaries (for better 'reason' bullets)
+    - read headlines + summaries
     - pick & club important business/economy/markets/jewellery stories
     - group into sections
     - output clean HTML only
@@ -116,9 +143,8 @@ def ask_ai_for_digest(headlines_text: str) -> str:
 You are an Indian business & markets analyst.
 
 Below is a list of items from multiple business news sites.
-Each item has: [Source], Title, Summary and Link.
-
-Use ONLY this input. Do NOT invent any story or URL.
+Each has: [Source], Title, Summary, Link.
+Use ONLY these items. Do NOT invent any story or URL.
 
 INPUT HEADLINES:
 {headlines_text}
@@ -132,19 +158,21 @@ Select stories that clearly relate to:
 - tech/startups/consumer trends with a clear business impact
 - jewellery industry: gold, silver, diamonds, gems, bullion, hallmarking, jewellery retail, supply/demand
 
-Ignore:
-- crime, generic politics, celebrity gossip, sports, lifestyle, weather, air quality, environment
-  unless the summary clearly shows a direct business/market/jewellery impact.
+If you are not sure whether a story has business impact, INCLUDE it. Err on the side of including more.
+
+Ignore only:
+- pure crime, gossip, celebrity, sports, weather, AQI, environment
+  when the summary clearly has NO business/economic link.
 
 ---------------- MERGING ----------------
 If multiple items are clearly about the same underlying event (same company, same decision, same policy move):
 - Merge them into ONE story.
 - Use the clearest headline as the title.
-- Use the summaries to deduplicate and enrich your bullets.
+- Use summaries to enrich the bullets.
 
-Aim for about 30–40 final stories (after merging).
-If there are fewer distinct stories, output what you have.
-Never invent extra stories.
+Aim for about 25–35 final stories (after merging).
+If there are fewer distinct stories, output as many as exist.
+Do NOT invent extra stories.
 
 ---------------- SECTIONS ----------------
 Group stories into these sections:
@@ -158,10 +186,10 @@ Rules:
 - Each story goes into exactly ONE section.
 - If no story fits a section, omit that section.
 - For the Jewellery section, only include stories where the title or summary clearly mentions jewellery, gold, silver,
-  diamonds, gems, bullion, hallmarking, or jewellery retailers. Otherwise, leave this section out.
+  diamonds, gems, bullion, hallmarking, or jewellery retailers. Otherwise, omit this section.
 
 ---------------- STORY FORMAT (HTML) ----------------
-For EACH story, output EXACTLY this structure:
+For EACH story, output EXACTLY:
 
 <div class="story">
   <h3>HEADLINE (Source)</h3>
@@ -173,8 +201,9 @@ For EACH story, output EXACTLY this structure:
   <p><a href="LINK_FROM_INPUT" target="_blank">Read more →</a></p>
 </div>
 
-- Use simple language (as if to a smart 15-year-old).
+Rules:
 - Each bullet must be one short sentence (no long paragraphs).
+- Use simple language (as if to a smart 15-year-old).
 - For each story, pick ONE real link from the input. Never invent or edit URLs.
 
 ---------------- OVERALL HTML STRUCTURE ----------------
@@ -222,7 +251,7 @@ Output ONLY valid HTML as described. No markdown, no commentary.
     prompt = prompt.format(headlines_text=headlines_text)
 
     response = client.responses.create(
-        model="gpt-4.1",
+        model="gpt-4o-mini",  # if you can, upgrade this to "gpt-4.1" for even better quality
         input=[
             {
                 "role": "user",
