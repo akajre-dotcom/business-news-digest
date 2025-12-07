@@ -236,7 +236,7 @@ Output ONLY valid HTML as described. No markdown, no commentary.
     prompt = prompt.format(headlines_text=headlines_text)
 
     response = client.responses.create(
-        model="gpt-4o-mini",  # if you can, upgrade this to "gpt-4.1" for even better quality
+        model="gpt-4.1",  # if you can, upgrade this to "gpt-4.1" for even better quality
         input=[
             {
                 "role": "user",
