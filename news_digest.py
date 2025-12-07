@@ -27,7 +27,7 @@ RSS_FEEDS = [
 ]
 
 # Upper limit of headlines to send to AI in one batch
-MAX_ITEMS = 100
+MAX_ITEMS = 200
 
 
 # =======================
@@ -38,7 +38,7 @@ def fetch_news():
     """Fetch recent headlines from all RSS feeds."""
     items = []
 
-    PER_FEED_LIMIT = 10  # how many items to take from each feed
+    PER_FEED_LIMIT = 20  # how many items to take from each feed
 
     for url in RSS_FEEDS:
         feed = feedparser.parse(url)
@@ -88,10 +88,10 @@ def build_headlines_text(items):
 def ask_ai_for_digest(headlines_text: str) -> str:
     """
     Ask OpenAI to:
-    - see up to MAX_ITEMS headlines from multiple Indian business feeds
-    - pick and club the most important stories
-    - group into sections
-    - output clean HTML (no <html>/<body>, just inner content)
+    - see up to MAX_ITEMS headlines from multiple feeds
+    - pick and club the most important business/economy/markets/jewellery stories
+    - never invent stories not present in the input
+    - output STRICT HTML (no <html>/<body>, just inner content)
     """
 
     api_key = os.environ["OPENAI_API_KEY"]
@@ -102,14 +102,20 @@ You are an expert Indian business & markets analyst.
 
 You will receive a list of headlines and summaries from multiple Indian and global business news sources.
 
-INPUT HEADLINES:
+INPUT HEADLINES (this is your ONLY source of truth – do NOT invent anything):
 {headlines_text}
 
 -----------------------------------------------------
-YOUR TASK
+HARD CONSTRAINTS (MUST OBEY)
 -----------------------------------------------------
+- Every story you output MUST be directly based on one or more of the INPUT HEADLINES.
+- You MUST NOT invent or add stories that are not present in the input.
+- If a topic is not in the input, completely ignore it.
+- Output MUST be valid HTML only, using the specified structure. No plain text outside HTML tags.
 
+-----------------------------------------------------
 1) Select relevant business/economy/markets stories
+-----------------------------------------------------
 Include stories related to:
 - Indian macroeconomy (GDP, inflation, RBI, rates, trade, fiscal policy)
 - Markets (stocks, bonds, commodities, FX, indices, yields)
@@ -117,35 +123,39 @@ Include stories related to:
 - Policy or politics only when it has clear economic or business impact
 - Tech, startups, consumer/business trends, wealth, personal finance
 - Global news with implications for India
-- Jewellery industry (retail, gold, pricing, imports, supply chain, demand)
+- Jewellery industry (retail, gold, silver, diamonds, gems, jewellery retailers, hallmarking, bullion, supply chain, demand)
 
 IGNORE:
 - Pure politics with no economic effect
-- Crime, weather, celebrity lifestyle, sports (unless business-related)
-- Entertainment content not tied to markets or money
+- Crime, weather, air quality, general environment, celebrity lifestyle, sports (unless clearly business-related)
+- Any content without a clear business, economic, markets or jewellery angle
 
 -----------------------------------------------------
 2) CLUB / MERGE DUPLICATE OR RELATED STORIES
+-----------------------------------------------------
 If multiple headlines clearly refer to the same underlying event, you MUST:
 
-- Merge them into one unified story
-- Use the best headline as the title
-- Combine important details from all related headlines inside the bullets
-- Do NOT create multiple stories that are basically the same
+- Merge them into one unified story.
+- Use the best headline as the title.
+- Combine important details from all related headlines inside the bullets.
+- Do NOT create multiple separate stories that say almost the same thing.
 
 Examples of items to club:
-- Multiple stories about the same RBI policy update
-- Repeated coverage of a single company’s earnings
-- Several headlines about the same market move
+- Multiple stories about the same RBI policy update.
+- Repeated coverage of a single company’s earnings or IPO.
+- Several headlines about the same market move or corporate event.
 
 -----------------------------------------------------
-3) How many stories to generate
-- After merging duplicates, aim for 35 to 55 stories total
-- Err on the side of INCLUDING more stories if in doubt
-- Do NOT output fewer than 30 stories unless there truly are not enough relevant items
+3) Number of stories
+-----------------------------------------------------
+- After merging duplicates, aim for 40 to 60 stories total.
+- If there are fewer distinct stories available, output as many as exist, but never fewer than 30 if you have 60+ input headlines.
+- Err on the side of INCLUDING more stories if you are unsure.
 
 -----------------------------------------------------
-4) Group stories into these sections
+4) Sections
+-----------------------------------------------------
+Group stories into these sections:
 
 A. 🇮🇳 India – Economy & Markets
 B. 🇮🇳 India – Corporate, Sectors, Startups & Deals
@@ -153,12 +163,16 @@ C. 🌏 Global – Markets & Macro
 D. 💍 Jewellery Industry (India & Global)
 
 Rules:
-- If a section has zero stories, you may omit it.
-- Preferably keep at least a few stories inside each section.
-- Each story must be placed under only one section.
+- Each story must go into exactly ONE section.
+- If a section has zero relevant stories, omit that section entirely.
+- JEWELLERY SECTION RULE:
+  - Only include stories where the headline or summary clearly mentions jewellery, gold, silver, bullion, diamonds, gems, jewellery retailers, hallmarking or related industry terms.
+  - If there are no such stories in the input, DO NOT create the Jewellery section at all.
 
 -----------------------------------------------------
-5) Format each story EXACTLY like this
+5) Story HTML format (STRICT)
+-----------------------------------------------------
+For EACH story, output HTML EXACTLY like this:
 
 <div class="story">
   <h3>HEADLINE (Source)</h3>
@@ -173,28 +187,33 @@ Rules:
 RULES FOR BULLETS:
 - Each bullet MUST be a single short sentence.
 - No long paragraphs.
-- No jargon; use simple, crisp economic and business logic.
+- No jargon; use simple, clear, concrete language.
 
 LINK RULE:
-- Use the link from the input.
-- If multiple input links were merged, choose the most useful one.
+- For each story, pick one URL from the input headlines that describe that story.
+- Use that URL as the link in the “Read more →” line.
+- Never make up or modify URLs.
 
 -----------------------------------------------------
-6) HTML Structure Required
-After grouping stories, output:
+6) Overall HTML structure
+-----------------------------------------------------
+You MUST output ONLY this pattern (repeat for each section you use):
 
 <h2>SECTION TITLE...</h2>
 <div class="section">
   ...many <div class="story"> blocks...
 </div>
 
-You MUST output ONLY valid inner HTML.
-Do NOT include <html>, <head> or <body> tags.
+- Do NOT include <html>, <head> or <body> tags.
+- Do NOT add any text outside these <h2>, <div class="section">, <div class="story">, <ul>, <li>, <p>, <a>, <b>, <h3> tags.
 
 -----------------------------------------------------
-7) ADD TWO FINAL SECTIONS
+7) Extra Sections at the end
+-----------------------------------------------------
 
-Monetizable Idea of the Day
+After all news sections, append these two blocks IN HTML:
+
+(1) Monetizable Idea of the Day
 
 <h2>💡 Monetizable Idea of the Day</h2>
 <div class="section">
@@ -202,14 +221,14 @@ Monetizable Idea of the Day
     <h3>IDEA TITLE</h3>
     <ul>
       <li><b>What it is:</b> one-sentence explanation.</li>
-      <li><b>Why this opportunity exists now:</b> simple cause/effect linked to current news trends.</li>
-      <li><b>How to execute:</b> 3–5 short, concrete steps.</li>
-      <li><b>Example:</b> a realistic example of a business or person doing something similar.</li>
+      <li><b>Why this opportunity exists now:</b> simple cause/effect linked to current business or tech trends.</li>
+      <li><b>How to execute:</b> 3–5 short, concrete steps that one person with low capital can follow.</li>
+      <li><b>Example:</b> a realistic example of a business or person already doing something similar.</li>
     </ul>
   </div>
 </div>
 
-Communication Upgrade of the Day
+(2) Communication Upgrade of the Day
 
 <h2>🗣 Communication Upgrade of the Day</h2>
 <div class="section">
@@ -217,7 +236,7 @@ Communication Upgrade of the Day
     <h3>SKILL NAME</h3>
     <ul>
       <li><b>What it is:</b> clear, simple definition.</li>
-      <li><b>Why it works:</b> psychological or business principle in ONE sentence.</li>
+      <li><b>Why it works:</b> one sentence explaining the psychological or business principle.</li>
       <li><b>How to apply:</b> 2–3 short steps or examples the reader can use today.</li>
     </ul>
   </div>
@@ -226,9 +245,9 @@ Communication Upgrade of the Day
 -----------------------------------------------------
 FINAL RULES:
 -----------------------------------------------------
-- Output ONLY the HTML described above.
-- No prefaces, no explanations, no markdown, no notes.
-- Keep everything tight, simple and business-focused.
+- Output ONLY valid HTML as described above.
+- Do NOT include any markdown, commentary, or text outside HTML tags.
+- Do NOT invent any stories, numbers or links not present in the input.
 """
 
     # Safely inject headlines_text into the prompt
