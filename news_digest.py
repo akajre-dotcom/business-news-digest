@@ -182,22 +182,24 @@ Rules:
   diamonds, gems, bullion, hallmarking, or jewellery retailers. Otherwise, omit this section.
 
 ---------------- STORY FORMAT (HTML) ----------------
-For EACH story, output EXACTLY:
+For EACH story, output EXACTLY this structure:
 
 <div class="story">
   <h3>HEADLINE (Source)</h3>
   <ul>
-    <li><b>What’s happening:</b> one short sentence describing the news.</li>
-    <li><b>Why it’s happening:</b> one short sentence explaining the main driver or cause, using the summary.</li>
-    <li><b>Why it matters (for business/markets):</b> one short sentence, very simple and concrete.</li>
+    <li><b>What’s happening:</b> one short sentence summarising the key fact or outcome, ADDING detail beyond the headline. Do NOT repeat the headline wording.</li>
+    <li><b>Why it’s happening:</b> one short sentence explaining the main driver or cause, using information from the summary (e.g. policies, demand, earnings, regulations, global trends).</li>
+    <li><b>Why it matters (for business/markets):</b> one short sentence explaining who is affected (e.g. which investors, sectors, companies, consumers) and whether the impact is likely positive, negative, or uncertain.</li>
+    <p><b>Impact:</b> POSITIVE / NEGATIVE / MIXED / UNCERTAIN (choose one word).</p>
   </ul>
   <p><a href="LINK_FROM_INPUT" target="_blank">Read more →</a></p>
 </div>
 
-Rules:
-- Each bullet must be one short sentence (no long paragraphs).
-- Use simple language (as if to a smart 15-year-old).
-- For each story, pick ONE real link from the input. Never invent or edit URLs.
+Extra rules for style:
+- "What’s happening" must NOT just restate the title; it should include at least one concrete detail (number, direction, timeframe, or sector) taken from the summary.
+- "Why it’s happening" should focus on causes: policy decisions, demand/supply changes, global cues, company strategy, investor behaviour, etc.
+- "Why it matters" should always mention impact on at least one of: investors, the economy, a sector, a company type (e.g. banks, exporters, IT), or consumers.
+
 
 ---------------- OVERALL HTML STRUCTURE ----------------
 For each section you actually use, output:
