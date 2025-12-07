@@ -2,8 +2,13 @@ name: Business News Digest
 
 on:
   schedule:
-    # Runs every 6 hours
-    - cron: "0 */6 * * *"
+    # 09:00 IST  → 03:30 UTC
+    - cron: "30 3 * * *"
+    # 15:00 IST → 09:30 UTC
+    - cron: "30 9 * * *"
+    # 21:00 IST → 15:30 UTC
+    - cron: "30 15 * * *"
+
   workflow_dispatch: {}
 
 jobs:
