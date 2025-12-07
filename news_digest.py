@@ -15,42 +15,37 @@ from openai import OpenAI
 # =======================
 
 # Curated India-heavy + some global context (native RSS where possible)
+# =======================
+# 1. RSS SOURCES
+# =======================
+
 RSS_FEEDS = [
-    # --- Livemint (India business, markets, money) ---
+    # --- Livemint: business-heavy official RSS feeds
     "https://www.livemint.com/rss/newsRSS",
     "https://www.livemint.com/rss/companiesRSS",
     "https://www.livemint.com/rss/marketsRSS",
+    "https://www.livemint.com/rss/industryRSS",
     "https://www.livemint.com/rss/moneyRSS",
 
-    # --- Business Standard (India business, markets, economy) ---
+    # --- Business Standard: latest news
     "https://www.business-standard.com/rss/latest.rss",
-    "https://www.business-standard.com/rss/markets-106.rss",
-    "https://www.business-standard.com/rss/companies-101.rss",
-    "https://www.business-standard.com/rss/economy-102.rss",
-    "https://www.business-standard.com/rss/finance-103.rss",
 
-    # --- Economic Times (India markets + economy) ---
+    # --- Economic Times: main + economy
     "https://economictimes.indiatimes.com/rssfeedsdefault.cms",
-    "https://economictimes.indiatimes.com/rssfeeds/1373380680.cms",  # Economy
+    "https://economictimes.indiatimes.com/rssfeeds/1373380680.cms",
 
-    # --- Moneycontrol & Business Today via Google News (no native clean RSS) ---
-    "https://news.google.com/rss/search?q=site:moneycontrol.com&hl=en-IN&gl=IN&ceid=IN:en",
-    "https://news.google.com/rss/search?q=site:businesstoday.in&hl=en-IN&gl=IN&ceid=IN:en",
+    # --- Hindustan Times: business RSS
+    "https://www.hindustantimes.com/feeds/rss/business/rssfeed.xml",
 
-    # --- Indian Express – Business (via Google News) ---
-    "https://news.google.com/rss/search?q=site:indianexpress.com+business&hl=en-IN&gl=IN&ceid=IN:en",
+    # --- Indian Express: business + markets
+    "https://indianexpress.com/section/business/feed/",
+    "https://indianexpress.com/section/business/market/feed/",
 
-    # --- Hindu BusinessLine (native) ---
-    "https://www.thehindubusinessline.com/feeder/default.rss",
-
-    # --- Global: Reuters business & markets ---
-    "http://feeds.reuters.com/reuters/businessNews",
-    "http://feeds.reuters.com/reuters/globalmarketsNews",
-    "http://feeds.reuters.com/news/economy",
-
-    # --- Jewellery-focused (Moneycontrol via Google News) ---
+    # --- Moneycontrol: via Google News for now (more targeted)
+    "https://news.google.com/rss/search?q=site:moneycontrol.com+markets&hl=en-IN&gl=IN&ceid=IN:en",
     "https://news.google.com/rss/search?q=site:moneycontrol.com+jewellery&hl=en-IN&gl=IN&ceid=IN:en",
 ]
+
 
 # Keep this moderate so we don't blow context
 MAX_ITEMS = 70   # total items across all feeds
@@ -63,7 +58,7 @@ MAX_ITEMS = 70   # total items across all feeds
 def fetch_news():
     """Fetch recent headlines + summaries from all RSS feeds."""
     items = []
-    PER_FEED_LIMIT = 8  # max per feed, many feeds = variety
+    PER_FEED_LIMIT = 6  # max items per feed
 
     for url in RSS_FEEDS:
         feed = feedparser.parse(url)
@@ -73,10 +68,10 @@ def fetch_news():
             title = entry.get("title", "").strip()
             summary = entry.get("summary", "").strip()
             link = entry.get("link", "").strip()
-            if not title:
+            if not title or not link:
                 continue
 
-            # Truncate very long summaries to save space but keep "reason" context
+            # Truncate very long summaries so model can still read "inside"
             if len(summary) > 350:
                 summary = summary[:350] + "..."
 
@@ -89,38 +84,36 @@ def fetch_news():
                 }
             )
 
+    # Global cap so we don't blow up context
+    MAX_ITEMS = 80
     return items[:MAX_ITEMS]
+
 
 
 def build_headlines_text(items):
     """
-    Turn news items into a compact text block for the AI.
-    We include: source, title, summary, link.
-    Also enforce an overall character cap to avoid context overflow.
+    Turn news items into a text block for the AI.
+    We include source, title, summary, link.
     """
     lines = []
-    char_limit = 9000  # hard cap on total text length for safety with gpt-4o-mini
-    current_len = 0
-
     for i, item in enumerate(items, start=1):
-        block_lines = [
-            f"{i}) [Source: {item['source']}]",
-            f"   Title: {item['title']}",
-        ]
-        if item["summary"]:
-            block_lines.append(f"   Summary: {item['summary']}")
+        summary = item["summary"]
+
+        lines.append(f"{i}) [Source: {item['source']}]")
+        lines.append(f"   Title: {item['title']}")
+        if summary:
+            lines.append(f"   Summary: {summary}")
         if item["link"]:
-            block_lines.append(f"   Link: {item['link']}")
-        block_lines.append("")  # blank line
+            lines.append(f"   Link: {item['link']}")
+        lines.append("")  # blank line
 
-        block_text = "\n".join(block_lines)
-        if current_len + len(block_text) > char_limit:
-            break
+    text = "\n".join(lines)
 
-        lines.append(block_text)
-        current_len += len(block_text)
+    # Safety cap on size to avoid context errors
+    if len(text) > 12000:
+        text = text[:12000]
+    return text
 
-    return "\n".join(lines)
 
 
 # =======================
@@ -251,7 +244,7 @@ Output ONLY valid HTML as described. No markdown, no commentary.
     prompt = prompt.format(headlines_text=headlines_text)
 
     response = client.responses.create(
-        model="gpt-4o-mini",  # if you can, upgrade this to "gpt-4.1" for even better quality
+        model="gpt-4.1",  # if you can, upgrade this to "gpt-4.1" for even better quality
         input=[
             {
                 "role": "user",
