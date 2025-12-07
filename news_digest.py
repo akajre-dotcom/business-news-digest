@@ -121,7 +121,7 @@ INPUT HEADLINES:
 
 TASK:
 
-1) From these, select ONLY stories that are truly business/economy/markets related:
+1) From these, select stories that are related to business/economy/markets related:
    - macroeconomy (GDP, inflation, RBI, Fed, rates, trade, fiscal, deficits)
    - markets (stocks, bonds, commodities, FX, indices, yields)
    - business policy & regulation (tax, customs, trade, FDI, industry policy)
