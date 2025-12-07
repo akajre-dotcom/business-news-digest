@@ -1,8 +1,11 @@
 import os
 import smtplib
 import ssl
+from datetime import datetime
+
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+
 
 import feedparser
 from openai import OpenAI
@@ -100,10 +103,12 @@ DO NOT include:
 Output format (mandatory): If someone reading should get insight and knowledge
 
 ## Headline (Source)
-• Topic:
+
 • Cause:
 • Effect:
 • Why this matters for business / economy:
+• Source link to read more :
+• Date of news released if available :
 
 """
 
@@ -126,10 +131,9 @@ Output format (mandatory): If someone reading should get insight and knowledge
     return response.output_text
 
 
-def send_email(subject, body):
-    """Send the digest via email using SMTP details from environment variables."""
+def send_email(subject, body_text):
+    """Send a nicely formatted HTML email with the digest."""
 
-    # These will come from GitHub secrets
     email_from = os.environ["EMAIL_FROM"]
     email_to = os.environ["EMAIL_TO"]
     smtp_server = os.environ["SMTP_SERVER"]
@@ -137,18 +141,60 @@ def send_email(subject, body):
     smtp_username = os.environ["SMTP_USERNAME"]
     smtp_password = os.environ["SMTP_PASSWORD"]
 
-    msg = MIMEMultipart()
+    # Time stamp
+    now_utc = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+
+    # Turn the AI plain-text into HTML (preserve line breaks)
+    body_html = body_text.replace("\n", "<br>")
+
+    html = f"""
+    <html>
+      <body style="margin:0; padding:0; background-color:#f5f5f5;">
+        <div style="max-width:750px; margin:20px auto; font-family:Arial, sans-serif;">
+          <div style="background:#ffffff; border-radius:10px; padding:20px 24px; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+            
+            <h2 style="margin-top:0; font-size:22px;">
+              📊 Daily / 6h Business News Digest
+            </h2>
+            <p style="margin:0; color:#777; font-size:12px;">
+              Generated automatically on <b>{now_utc}</b>
+            </p>
+            
+            <hr style="margin:16px 0; border:none; border-top:1px solid #eee;">
+            
+            <p style="font-size:14px; color:#333; line-height:1.6;">
+              <b>How to read this:</b> Each story is explained as <i>Cause → Effect → Why it matters</i>.
+            </p>
+
+            <div style="font-size:14px; color:#111; line-height:1.6; margin-top:8px;">
+              {body_html}
+            </div>
+
+            <hr style="margin:20px 0; border:none; border-top:1px solid #eee;">
+
+            <p style="font-size:12px; color:#999; margin:0;">
+              🤖 This summary is auto-generated from multiple business news sources.
+            </p>
+          </div>
+        </div>
+      </body>
+    </html>
+    """
+
+    msg = MIMEMultipart("alternative")
     msg["From"] = email_from
     msg["To"] = email_to
     msg["Subject"] = subject
 
-    msg.attach(MIMEText(body, "plain"))
+    # Attach HTML part
+    msg.attach(MIMEText(html, "html"))
 
     context = ssl.create_default_context()
     with smtplib.SMTP(smtp_server, smtp_port) as server:
         server.starttls(context=context)
         server.login(smtp_username, smtp_password)
         server.send_message(msg)
+
 
 
 def main():
