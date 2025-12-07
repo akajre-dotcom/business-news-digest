@@ -16,30 +16,14 @@ from openai import OpenAI
 
 # Curated list: India-heavy + some global context
 RSS_FEEDS = [
-    # --- Indian: Livemint ---
-    "https://www.livemint.com/rss/newsRSS",
-    "https://www.livemint.com/rss/companiesRSS",
-    "https://www.livemint.com/rss/marketsRSS",
-    "https://www.livemint.com/rss/industryRSS",
-    "https://www.livemint.com/rss/moneyRSS",
-    "https://news.google.com/rss/search?q=site:moneycontrol.com+jewellery",
-
-    # --- Indian: Business Standard ---
-    "https://www.business-standard.com/rss/latest.rss",
-    "https://www.business-standard.com/rss/markets-106.rss",
-    "https://www.business-standard.com/rss/companies-101.rss",
-    "https://www.business-standard.com/rss/economy-102.rss",
-    "https://www.business-standard.com/rss/finance-103.rss",
-
-    # --- Indian: Economic Times (main + economy) ---
-    "https://economictimes.indiatimes.com/rssfeedsdefault.cms",
-    "https://economictimes.indiatimes.com/rssfeeds/1373380680.cms",  # Economy
-
-    # --- Global: Reuters (business + markets + economy) ---
-    "http://feeds.reuters.com/reuters/businessNews",
-    "http://feeds.reuters.com/reuters/INbusinessNews",
-    "http://feeds.reuters.com/reuters/globalmarketsNews",
-    "http://feeds.reuters.com/news/economy",
+    "https://news.google.com/rss/search?q=site:business-standard.com&hl=en-IN&gl=IN&ceid=IN:en",
+    "https://news.google.com/rss/search?q=site:economictimes.indiatimes.com&hl=en-IN&gl=IN&ceid=IN:en",
+    "https://news.google.com/rss/search?q=site:hindustantimes.com+business&hl=en-IN&gl=IN&ceid=IN:en",
+    "https://news.google.com/rss/search?q=site:moneycontrol.com&hl=en-IN&gl=IN&ceid=IN:en",
+    "https://news.google.com/rss/search?q=site:businesstoday.in&hl=en-IN&gl=IN&ceid=IN:en",
+    "https://news.google.com/rss/search?q=site:livemint.com&hl=en-IN&gl=IN&ceid=IN:en",
+    "https://news.google.com/rss/search?q=site:indianexpress.com+business&hl=en-IN&gl=IN&ceid=IN:en",
+    "https://news.google.com/rss/search?q=site:thehindubusinessline.com&hl=en-IN&gl=IN&ceid=IN:en",
 ]
 
 MAX_ITEMS = 100  # upper limit of headlines to send to AI in one batch
@@ -111,146 +95,142 @@ def ask_ai_for_digest(headlines_text: str) -> str:
     api_key = os.environ["OPENAI_API_KEY"]
     client = OpenAI(api_key=api_key)
 
-    prompt = f"""
-You are an expert business & markets analyst.
+You are an expert Indian business & markets analyst.
 
-You will receive a list of headlines with source, summary and links.
-These are mostly India + global business news.
+You will receive a list of headlines and summaries scraped from the Economic Times homepage.
 
 INPUT HEADLINES:
 {headlines_text}
 
-TASK:
+-----------------------------------------------------
+YOUR TASK
+-----------------------------------------------------
 
-1) From these, select stories that are related to business/economy/markets:
-   - macroeconomy (GDP, inflation, RBI, Fed, rates, trade, fiscal, deficits)
-   - markets (stocks, bonds, commodities, FX, indices, yields)
-   - business policy & regulation (tax, customs, trade, FDI, industry policy)
-   - corporate & sectors (earnings, expansions, capacity, M&A, capex)
-   - startups, funding, IPOs, exits
-   - global business events that affect markets or Indian economy
-   - Indian jewellery business, industry, gold, supply chain, retail and sales in jewellery
+1) **Select relevant business/economy/markets stories**
+Include stories related to:
+- Indian macroeconomy (GDP, inflation, RBI, rates, trade, fiscal policy)
+- Markets (stocks, bonds, commodities, FX, indices, yields)
+- Business, corporate updates, sectors, earnings, funding, M&A, IPOs
+- Policy/politics **only when it has clear economic or business impact**
+- Tech, startups, consumer/business trends, wealth, personal finance
+- Global news with implications for India
+- Jewellery industry (retail, gold, pricing, imports, supply chain, demand)
 
-   IGNORE:
-   - generic politics and elections unless they directly affect economy/business
-   - social issues, crime, human interest, environment unless immediate business impact
-   - celebrity/lifestyle/gossip content (weddings, outfits, personal life) even if it mentions jewellery
-   - generic editorials without concrete economic or business implication
+IGNORE:
+- Pure politics with no economic effect
+- Crime, weather, celebrity lifestyle, sports (unless business-related)
+- Entertainment content not tied to markets or money
 
-   COVERAGE & SIZE RULES:
-   - You are seeing up to 100 stories from many different [Source: ...] feeds.
-   - From these, you MUST select BETWEEN 25 AND 30 stories in total.
-   - Aim for EXACTLY 30 stories when possible.
-   - Never output fewer than 25 stories unless there genuinely are not enough relevant items.
-   - If you are unsure whether a story is important, ERR ON THE SIDE OF INCLUDING IT so that you reach the target count.
-   - For each distinct [Source: ...] in the input, TRY to include at least one good story from that source, if any exist.
-   - Distribute stories across the sections below so that, where possible, EACH section has AT LEAST 5 stories.
-     If a section truly has fewer relevant stories, fill other sections more.
-   - Prioritise:
-     1) big macro / policy / market moves,
-     2) key corporate / sector / funding / IPO updates,
-     3) important global events,
-     4) jewellery industry news (India + global).
+-----------------------------------------------------
+2) **CLUB / MERGE DUPLICATE OR RELATED STORIES**
+If multiple headlines clearly refer to the **same underlying event**, you MUST:
 
-   BREVITY RULE:
-   - Keep each bullet (What’s happening / Why it’s happening / Why it matters) to ONE short sentence.
-   - Do NOT write long paragraphs. Think of this as a rapid-scan briefing.
+- Merge them into **one unified story**
+- Use the **best headline** as the title
+- Combine important details from all related headlines inside the bullets
+- Do NOT create multiple stories that are basically the same
 
-2) Group selected stories into up to 4 sections (you can skip a section ONLY if it has zero relevant stories):
+Examples of items to club:
+- Multiple stories about the same RBI policy update
+- Repeated coverage of a single company’s earnings
+- Several headlines about the same market move
 
-   A. 🇮🇳 India – Economy & Markets
-   B. 🇮🇳 India – Corporate, Sectors, Startups & Deals
-   C. 🌏 Global – Markets & Macro
-   D. 💍 Jewellery Industry (India & Global)
+-----------------------------------------------------
+3) **How many stories to generate**
+- After merging duplicates, aim for **35 to 55 stories total**
+- Err on the side of INCLUDING more stories if in doubt
+- Do NOT output fewer than 30 stories unless there truly are not enough relevant items
 
-3) For EACH story, output in this HTML structure:
+-----------------------------------------------------
+4) **Group stories into these sections**
 
-   <div class="story">
-     <h3>HEADLINE (Source)</h3>
-     <ul>
-       <li><b>What’s happening:</b> short, clear description of the news in 1–2 lines.</li>
-       <li><b>Why it’s happening:</b> the main drivers, decisions, or forces behind this.</li>
-       <li><b>Why it matters (for business/markets):</b> explain in very simple terms like to a smart 15-year-old, focusing on impact to economy, sectors, companies, investors, or policy.</li>
-     </ul>
-     <p><a href="LINK_FROM_INPUT" target="_blank">Read more →</a></p>
-   </div>
+A. 🇮🇳 India – Economy & Markets  
+B. 🇮🇳 India – Corporate, Sectors, Startups & Deals  
+C. 🌏 Global – Markets & Macro  
+D. 💍 Jewellery Industry (India & Global)  
 
-Use the "Link:" field in the input as the href for the “Read more →” link.
-If no link is available, omit that line.
+Rules:
+- If a section has zero stories, you may omit it.
+- Preferably keep **at least a few stories** inside each section.
+- Each story must be placed under **only one** section.
 
-4) Output valid HTML ONLY, with this structure:
+-----------------------------------------------------
+5) **Format each story EXACTLY like this**
 
-   <h2>SECTION TITLE...</h2>
-   <div class="section">
-      ...multiple <div class="story"> blocks...
-   </div>
+<div class="story">
+  <h3>HEADLINE (Source)</h3>
+  <ul>
+    <li><b>What’s happening:</b> ONE short sentence describing the event.</li>
+    <li><b>Why it’s happening:</b> ONE short sentence explaining the driver/cause.</li>
+    <li><b>Why it matters (for business/markets):</b> ONE short sentence explained simply like to a smart 15-year-old.</li>
+  </ul>
+  <p><a href="LINK_FROM_INPUT" target="_blank">Read more →</a></p>
+</div>
 
-5) AFTER the 4 news sections, append two additional AI-generated sections:
+RULES FOR BULLETS:
+- Each bullet MUST be a **single short sentence**.
+- No long paragraphs.
+- No jargon — simple, crisp economic/business logic.
 
---------------------------------------------------------
-📌 SECTION: 1 Monetizable Idea of the Day
-Provide two simple, actionable money-making idea based on:
-- current business trends,
-- opportunities emerging from the news,
-- gaps in consumer behavior,
-- AI/tech tools,
-- jewellery industry trends,
-- global patterns.
+LINK RULE:
+- Use the link from the input.
+- If multiple input links were merged, choose the **most useful** one.
 
-Make it:
-- easy to understand,
-- executable by 1 person with minimal/zero money,
-- specific (not generic advice),
-- with 3–5 concrete steps.
+-----------------------------------------------------
+6) **HTML Structure Required**
+After grouping stories, output:
 
-Format:
+<h2>SECTION TITLE...</h2>
+<div class="section">
+  ...many <div class="story"> blocks...
+</div>
+
+You MUST output **ONLY** valid inner HTML.
+NO `<html>`, `<head>`, `<body>` tags.
+
+-----------------------------------------------------
+7) ADD TWO FINAL SECTIONS
+
+==============================
+💡 Monetizable Idea of the Day
+==============================
 
 <h2>💡 Monetizable Idea of the Day</h2>
 <div class="section">
   <div class="story">
     <h3>IDEA TITLE</h3>
     <ul>
-      <li><b>What it is:</b> brief explanation.</li>
-      <li><b>Why this opportunity exists now:</b> simple cause/effect logic.</li>
-      <li><b>How to execute:</b> 3–5 steps.</li>
-      <li><b>Example:</b> 1 real or realistic business already doing this.</li>
+      <li><b>What it is:</b> one-sentence explanation.</li>
+      <li><b>Why this opportunity exists now:</b> simple cause/effect linked to current news trends.</li>
+      <li><b>How to execute:</b> 3–5 short steps.</li>
+      <li><b>Example:</b> a realistic example of a business/person doing something similar.</li>
     </ul>
   </div>
 </div>
 
---------------------------------------------------------
-📌 SECTION: 1 Communication Upgrade of the Day
-Give Five powerful communication technique that makes someone:
-- better at negotiation,
-- clearer in speech,
-- better at leadership communication,
-- better at sales/persuasion,
-- better at writing simple business English.
-
-Keep it:
-- short,
-- highly practical,
-- something the reader can use immediately.
-
-Format:
+==============================
+🗣 Communication Upgrade of the Day
+==============================
 
 <h2>🗣 Communication Upgrade of the Day</h2>
 <div class="section">
   <div class="story">
     <h3>SKILL NAME</h3>
     <ul>
-      <li><b>What it is:</b> simple definition.</li>
-      <li><b>Why it works:</b> psychological/business principle.</li>
-      <li><b>How to apply:</b> 2–3 steps or examples.</li>
+      <li><b>What it is:</b> clear, simple definition.</li>
+      <li><b>Why it works:</b> psychological/business principle in ONE sentence.</li>
+      <li><b>How to apply:</b> 2–3 short steps or examples.</li>
     </ul>
   </div>
 </div>
 
-RULES:
-- Do NOT include <html>, <head>, <body> tags.
-- Do NOT write anything outside these sections.
-- Be concise but insightful, avoid buzzwords.
-"""
+-----------------------------------------------------
+FINAL RULES:
+-----------------------------------------------------
+- Output ONLY the HTML described above.
+- No prefaces, no explanations, no markdown, no notes.
+- Keep everything tight, simple, business-focused.
+
 
     response = client.responses.create(
         model="gpt-4o-mini",
