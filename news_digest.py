@@ -121,7 +121,7 @@ INPUT HEADLINES:
 
 TASK:
 
-1) From these, select stories that are related to business/economy/markets related:
+1) From these, select stories that are related to business/economy/markets:
    - macroeconomy (GDP, inflation, RBI, Fed, rates, trade, fiscal, deficits)
    - markets (stocks, bonds, commodities, FX, indices, yields)
    - business policy & regulation (tax, customs, trade, FDI, industry policy)
@@ -135,12 +135,17 @@ TASK:
    - social issues, crime, human interest, environment unless immediate business impact
    - generic editorials without concrete economic or business implication
 
-2) Group selected stories into at most 3 sections (you can skip a section if empty):
+   COVERAGE RULE:
+   - For each distinct [Source: ...] in the input, try to select AT LEAST ONE relevant story from that source, if any exist.
+   - In total, select AT LEAST 5 stories and ideally 10–20 of the most important ones.
+   - If a source has no clearly relevant business/economy/markets stories, you may skip that source.
+
+2) Group selected stories into up to 4 sections (you can skip a section if empty):
 
    A. 🇮🇳 India – Economy & Markets
    B. 🇮🇳 India – Corporate, Sectors, Startups & Deals
    C. 🌏 Global – Markets & Macro
-   D. Jewellery Industry ( India & Global )
+   D. 💍 Jewellery Industry (India & Global)
 
 3) For EACH story, output in this HTML structure:
 
@@ -154,9 +159,9 @@ TASK:
      <p><a href="LINK_FROM_INPUT" target="_blank">Read more →</a></p>
    </div>
 
-
 Use the "Link:" field in the input as the href for the “Read more →” link.
 If no link is available, omit that line.
+
 
 4) Output valid HTML ONLY, with this structure:
 
