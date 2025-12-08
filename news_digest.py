@@ -49,7 +49,7 @@ RSS_FEEDS = [
     "https://news.google.com/rss/search?q=site:moneycontrol.com+markets&hl=en-IN&gl=IN&ceid=IN:en",
 ]
 
-MAX_ITEMS_PER_FEED = 8   # ⬅️ smaller, balanced per feed
+MAX_ITEMS_PER_FEED = 20   # ⬅️ smaller, balanced per feed
 IST = pytz.timezone("Asia/Kolkata")
 
 
@@ -190,6 +190,38 @@ Each item has: numeric ID, [Source], Title, Link.
 
 INPUT ITEMS:
 {headlines_text}
+
+---------------- BEFORE GROUPING – APPLY NEWSROOM FILTER ----------------
+As a senior business editor, filter the input headlines STRICTLY.
+
+You must EXCLUDE ALL ITEMS that do NOT have clear and direct business,
+economic, financial, corporate, policy, markets, trade, commodities,
+startup, taxation, banking, investing or industry relevance.
+
+EXCLUDE completely (do not summarise, do not group, do not output):
+- Celebrity news, influencers, actors, entertainment, movies, OTT, gossip.
+- Crime reports, FIRs, court cases unrelated to business impact.
+- Viral videos, memes, social media trends, public outbursts, human-interest stories.
+- Pure politics without measurable economic or business consequence.
+- General news: weather, accidents, natural disasters, protests, cultural events.
+- Local incidents with zero corporate, regulatory, macroeconomic, retail, or investor impact.
+- General lifestyle advice, travel stories, festival stories, personal anecdotes.
+
+KEEP ONLY IF the item CLEARLY affects:
+- Companies, sectors, earnings, growth, competitive dynamics.
+- Markets: equities, debt, commodities, currencies, crypto, derivatives.
+- Policy/regulation with business or economic impact.
+- Banking, NBFCs, mutual funds, insurance, pensions, taxation.
+- Macro indicators: GDP, inflation, RBI decisions, fiscal issues, trade data.
+- Startups, funding, VC/PE, IPOs, acquisitions, mergers.
+- Consumer behaviour-shifting trends WITH economic relevance.
+- Jewellery, gold, gems, diamonds, bullion, hallmarking, retail trends.
+
+If a headline’s economic/business impact is NOT obvious → **EXCLUDE IT**.
+If the impact is indirect BUT real → **KEEP IT**.
+
+After filtering, only use the remaining items for grouping and summary.
+
 
 ---------------- TASK 1 – CREATE STORY GROUPS (STRICTLY) ----------------
 You are acting as a senior news editor responsible for organising headlines into
