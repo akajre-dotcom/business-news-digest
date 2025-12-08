@@ -6,6 +6,7 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 from typing import List, Dict
 import time
+import random
 
 import feedparser
 import pytz
@@ -49,7 +50,7 @@ RSS_FEEDS = [
     "https://news.google.com/rss/search?q=site:moneycontrol.com+markets&hl=en-IN&gl=IN&ceid=IN:en",
 ]
 
-MAX_ITEMS_PER_FEED = 15   # ⬅️ smaller, balanced per feed
+MAX_ITEMS_PER_FEED = 15
 IST = pytz.timezone("Asia/Kolkata")
 
 
@@ -160,17 +161,16 @@ def build_headlines_text(items: List[Dict]) -> str:
 
 
 # =======================
-# 4. CALL OPENAI – CLUSTER, SUMMARISE, ADD GROWTH SECTIONS
+# 4. CALL OPENAI – 7 VALUE SECTIONS + NEWS FRONT PAGE
 # =======================
 
 def ask_ai_for_digest(headlines_text: str) -> str:
     """
     Calls OpenAI to:
     - Filter to serious business/economic news
-    - Pick a small set of high-impact, diverse stories
-    - Use at most 1 story per company/theme
-    - Output short, clickable summary-only HTML
-    - Append 4 personal-growth sections
+    - Pick a small set of high-impact, diverse stories (front-page style)
+    - Ensure at most 1 story per company/theme
+    - Output: first 7 daily value-upgrade sections, then news sections
     """
 
     if "OPENAI_API_KEY" not in os.environ:
@@ -179,9 +179,11 @@ def ask_ai_for_digest(headlines_text: str) -> str:
     client = OpenAI()
 
     prompt = f"""
-You are an expert business journalist and senior newsroom editor. Now you have to create front page of todays of news paper, mean most important news only
+You are an expert business journalist and senior newsroom editor.
+You must create a *front-page style* digest for a smart Indian reader.
 
-You receive a flat list of news items from multiple business, finance, markets, industry, and jewellery RSS feeds.
+You receive a flat list of news items from multiple business, finance,
+markets, industry, and jewellery RSS feeds.
 Each item has: numeric ID, [Source], Title, Link.
 
 INPUT ITEMS:
@@ -214,7 +216,7 @@ If relevance is not obvious → EXCLUDE it.
 
 
 ==============================================================
-STEP 1 – SELECT DISTINCT, HIGH-IMPACT STORIES
+STEP 1 – SELECT DISTINCT, HIGH-IMPACT NEWS STORIES
 ==============================================================
 
 From the filtered headlines, select a small, *diverse* set of stories.
@@ -222,13 +224,11 @@ From the filtered headlines, select a small, *diverse* set of stories.
 HARD LIMITS:
 - You MUST output AT MOST 15 news stories in total (across all sections).
 - For any single company / instrument / crisis / theme,
-  you may output AT MOST 1 summary in the entire digest.
+  you may output AT MOST 1 news story in the digest.
 
 This means:
-- If there are 15 headlines about the same news,
-  you MUST mentally combine them and output JUST ONE summary for that topic.
-- If there are many headlines about the same macro topic (e.g. a single RBI
-  liquidity decision), output at most one well-phrased summary.
+- If there are many headlines about the same IndiGo crisis, RBI move, or macro data,
+  mentally combine them and write JUST ONE summary for that topic.
 - Prioritise breadth and variety over completeness.
 
 PRIORITISE:
@@ -237,15 +237,14 @@ PRIORITISE:
 - Clear investor / sector impact.
 - Jewellery / gold where there is real business relevance.
 
-Do NOT try to cover every filtered headline.  
-Pick the ~10 most important and distinct stories.
+You are allowed to DROP less-important stories completely.
 
 
 ==============================================================
-STEP 2 – ASSIGN EACH STORY TO ONE SECTION
+STEP 2 – ASSIGN EACH NEWS STORY TO ONE SECTION
 ==============================================================
 
-Each chosen story must go to EXACTLY ONE of:
+Each chosen news story must go to EXACTLY ONE of:
 
 A. 🇮🇳 India – Economy, Markets, Corporate, Sectors, Startups & Deal  
 B. 🌏 Global – Economy, Markets, Corporate, Sectors, Startups & Deal  
@@ -257,25 +256,21 @@ Choose the section that best fits the main focus of the story.
 
 
 ==============================================================
-STEP 3 – OUTPUT FORMAT (STRICT HTML ONLY, CLICKABLE SUMMARY)
+STEP 3 – 7 DAILY VALUE-UPGRADE SECTIONS (OUTPUT FIRST)
 ==============================================================
 
-For each section you actually use, output:
-
-==============================================================
-AFTER ALL NEWS SECTIONS — ADD THESE SEVEN DAILY VALUE-UPGRADES
-==============================================================
+Before the news, output these 7 sections in this exact order.
 
 Use minimum words. Explanations must follow first-principles thinking:
 - Define the core idea.
 - Explain why it works.
 - Give 2–3 extremely practical application steps.
-- No fluff, no quotes, no stories unless they add clear value.
+- No fluff, no quotes, no long stories.
 
 Very important:
 - You do NOT have live data.
-- For all sections below, choose examples that are timeless / generally true.
-- Do NOT mention “yesterday”, dates, or specific recent events.
+- For these 7 sections, choose examples that are timeless / generally true.
+- Do NOT mention dates or “yesterday”.
 - If you mention a CEO, company, or book, choose well-known, high-signal ones.
 
 1️⃣ 🗣 Communication Upgrade of the Day
@@ -335,8 +330,8 @@ Very important:
 </div>
 
 Rules for choosing the book:
-- Choose a widely known, high-impact non-fiction book in business, investing,
-  decision-making, psychology, or careers (e.g., no obscure or niche titles).
+- Choose a widely known, high-impact non-fiction book
+  in business, investing, decision-making, psychology, or careers.
 - Do NOT claim the book was released “recently” or “yesterday”.
 
 5️⃣ 🏢 What Top CEOs Are Saying
@@ -353,11 +348,11 @@ Rules for choosing the book:
   </div>
 </div>
 
-Rules for this section:
+Rules:
 - Pick a well-known CEO of a major global or Indian company.
 - Use a timeless, representative message (e.g., focus on customers, long-term thinking),
   not a “yesterday” quote.
-- Do NOT mention dates, “yesterday”, or specific quarterly calls.
+- Do NOT mention dates.
 
 6️⃣ 🎯 Decision-Making Model of the Day
 ---------------------------------------
@@ -388,17 +383,24 @@ Rules for this section:
 </div>
 
 
+==============================================================
+STEP 4 – NEWS SECTIONS FORMAT (AFTER VALUE-UPGRADE SECTIONS)
+==============================================================
+
+After the 7 sections above, output the news sections.
+
+For each section that has at least one story, use:
+
 <h2>SECTION TITLE</h2>
 <div class="section">
 
   <div class="story">
     <p>
       <a href="MAIN_LINK" target="_blank">
-        <b>:</b>
+        <b>[MAIN_SOURCE]</b> –
         ONE short sentence in clean, neutral English describing
         what happened and why it matters.
       </a>
-      <span> (Source: MAIN_SOURCE)</span>
     </p>
   </div>
 
@@ -408,12 +410,10 @@ Rules for this section:
 
 SUMMARY RULES:
 - The summary itself must be clickable (inside the <a> tag).
-- Do NOT just repeat the headline; add value:
-  - mention the type/direction of change and who/what is affected (sector, investors, policy, company).
-- Use ONLY what can be inferred from the titles (no invented numbers, quotes, or dates).
-- Each summary MUST be exactly ONE sentence.
-
-
+- Do NOT just repeat the headline; add value by indicating
+  type/direction of change and who/what is affected.
+- Use ONLY what can be inferred from the titles:
+  no invented numbers, quotes, or dates.
 
 
 ==============================================================
@@ -421,13 +421,13 @@ NON-NEGOTIABLE OUTPUT RULES
 ==============================================================
 
 - Use ONLY information from the input titles for news summaries.
-- You may drop less-important headlines completely to respect
-  the 10-story and 1-story-per-theme limits.
+- You may DROP less-important headlines completely to respect
+  the 15-story and 1-story-per-theme limits.
 - Do NOT invent URLs.
 - Do NOT output numeric IDs.
 - Output must be PURE HTML.
 - Do NOT output <html>, <head>, or <body> tags.
-- The four value-add sections at the end are MANDATORY.
+- The 7 value-upgrade sections at the top are MANDATORY.
 
 End of instructions.
 """
@@ -435,17 +435,15 @@ End of instructions.
     response = client.responses.create(
         model="gpt-4.1",
         input=prompt,
-        max_output_tokens=3500,  # more room so it doesn't cut off
+        max_output_tokens=3500,
         temperature=0.2,
     )
 
     return response.output_text.strip()
 
 
-
-
 # =======================
-# 5. SEND NICE HTML EMAIL
+# 5. SEND NICE HTML EMAIL (WITH HEADER IMAGE)
 # =======================
 
 def send_email(subject: str, digest_html: str):
@@ -458,16 +456,38 @@ def send_email(subject: str, digest_html: str):
 
     now_ist = datetime.now(IST).strftime("%Y-%m-%d %I:%M %p IST")
 
+    # 👉 Replace these with real copyright-free image URLs
+    # from Unsplash / Pexels etc.
+    header_images = [
+        "https://your-image-host.com/business-header-1.jpg",
+        "https://your-image-host.com/markets-header-2.jpg",
+        "https://your-image-host.com/strategy-header-3.jpg",
+    ]
+    selected_image = random.choice(header_images)
+
+    header_img_html = ""
+    if selected_image:
+        header_img_html = f"""
+        <div style="margin:0 -26px 16px -26px;">
+          <img src="{selected_image}"
+               alt="Business & markets"
+               style="width:100%; max-height:220px; object-fit:cover; border-radius:12px 12px 0 0; display:block;">
+        </div>
+        """
+
     html = f"""
     <html>
       <body style="margin:0; padding:0; background-color:#f5f5f5;">
         <div style="max-width:800px; margin:20px auto; font-family:Arial, sans-serif;">
           <div style="background:#ffffff; border-radius:12px; padding:20px 26px; box-shadow:0 2px 10px rgba(0,0,0,0.08);">
-            
+
+            {header_img_html}
+
             <h1 style="margin:0 0 4px 0; font-size:22px; color:#111;">
-              📊 7 Daily Value Upgrade & Business News Digests
+              📊 7 Daily Value Upgrades & Business News Digest
             </h1>
             <p style="margin:0; color:#777; font-size:12px;">
+              Generated automatically on <b>{now_ist}</b>
             </p>
 
             <hr style="margin:16px 0; border:none; border-top:1px solid #eee;">
@@ -479,7 +499,8 @@ def send_email(subject: str, digest_html: str):
             <hr style="margin:20px 0; border:none; border-top:1px solid #eee;">
 
             <p style="font-size:11px; color:#999; margin:0;">
-              Stories are grouped when multiple sources cover the same event.
+              🤖 This digest is auto-generated from multiple business news RSS feeds using AI.
+              Headlines are filtered for business relevance, condensed, and grouped by theme.
             </p>
           </div>
         </div>
