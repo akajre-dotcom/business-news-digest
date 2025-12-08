@@ -49,7 +49,7 @@ RSS_FEEDS = [
     "https://news.google.com/rss/search?q=site:moneycontrol.com+markets&hl=en-IN&gl=IN&ceid=IN:en",
 ]
 
-MAX_ITEMS_PER_FEED = 20   # ⬅️ smaller, balanced per feed
+MAX_ITEMS_PER_FEED = 15   # ⬅️ smaller, balanced per feed
 IST = pytz.timezone("Asia/Kolkata")
 
 
