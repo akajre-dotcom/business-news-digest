@@ -49,7 +49,7 @@ RSS_FEEDS = [
     "https://news.google.com/rss/search?q=site:moneycontrol.com+markets&hl=en-IN&gl=IN&ceid=IN:en",
 ]
 
-MAX_ITEMS_PER_FEED = 30  # how many entries to look at per feed
+MAX_ITEMS_PER_FEED = 8   # ⬅️ smaller, balanced per feed
 IST = pytz.timezone("Asia/Kolkata")
 
 
@@ -157,9 +157,10 @@ def build_headlines_text(items: List[Dict]) -> str:
 
     text = "\n".join(lines)
 
-    # Safety cap on size (should rarely hit)
-    if len(text) > 15000:
-        text = text[:15000]
+    # ❌ REMOVE this truncation – it was cutting off later feeds
+    # if len(text) > 15000:
+    #     text = text[:15000]
+
     return text
 
 
@@ -168,14 +169,6 @@ def build_headlines_text(items: List[Dict]) -> str:
 # =======================
 
 def ask_ai_for_digest(headlines_text: str) -> str:
-    """
-    Ask OpenAI to:
-    - Read headlines only (no article body)
-    - Club similar news into single story when same event
-    - Group stories into broader categories
-    - Output HTML only
-    """
-
     if "OPENAI_API_KEY" not in os.environ:
         raise RuntimeError("OPENAI_API_KEY environment variable is not set")
 
@@ -205,22 +198,13 @@ Rules:
 Assign each story group to exactly ONE of these categories:
 
 A. 🇮🇳 India – Economy & Markets
-   (RBI, GDP, inflation, fiscal, trade, indices, yields, Nifty, Sensex, macro data)
 B. 🇮🇳 India – Corporate, Sectors, Startups & Deals
-   (company news, results, earnings, funding, IPOs, M&A, sector-specific developments)
 C. 🌏 Global – Markets & Macro
-   (US/Europe/Asia macro, global markets, Fed, ECB, BOJ, global commodities, FX)
 D. 💍 Jewellery, Gold, Gems & Retail
-   (gold prices, jewellery demand, hallmarking, diamond/gem trade, jewellery retailers)
 E. 🧩 Other Business & Consumer Trends
-   (business + tech + consumer trends that don't fit cleanly above)
-
-Every story group MUST go into exactly ONE of the above sections.
 
 ---------------- TASK 3 – OUTPUT FORMAT (HTML ONLY) ----------------
 Output ONLY HTML, structured as:
-
-For each category section you actually use:
 
 <h2>SECTION TITLE</h2>
 <div class="section">
@@ -234,29 +218,21 @@ For each category section you actually use:
       <ul>
         <li>Source XYZ – <a href="LINK_2" target="_blank">LINK_2</a></li>
         <li>Source ABC – <a href="LINK_3" target="_blank">LINK_3</a></li>
-        <!-- omit this inner list entirely if there are no extra links -->
       </ul>
     </ul>
   </div>
-
-  <!-- more <div class="story"> blocks within this section -->
 </div>
 
-Requirements:
-- Choose the clearest or most complete headline as MAIN HEADLINE.
-- For each story, always show at least the MAIN_LINK (the link from one of the grouped items).
-- If only one item is in a group, then omit the "Also covered by" inner list.
+- Omit the inner "Also covered by" list if there are no extra links.
 - Do NOT invent any story or URL; ONLY use the IDs/titles/links given.
-- Do NOT reference the numeric IDs in the final output; they are only for your grouping logic.
+- Do NOT reference the numeric IDs in the final output.
 
----------------- VERY IMPORTANT ----------------
-- Use ONLY information available from titles and sources.
-- No external knowledge, no invented numbers or dates.
-- Output MUST be valid HTML only. No markdown. No explanations.
+Use ONLY information from titles and sources. No external knowledge.
+Output MUST be valid HTML only. No markdown, no explanations.
 """
 
     response = client.responses.create(
-        model="gpt-4.1-mini",      # cheaper, good enough for clustering
+        model="gpt-4.1-mini",
         input=prompt,
         max_output_tokens=2500,
         temperature=0.2,
@@ -270,8 +246,6 @@ Requirements:
 # =======================
 
 def send_email(subject: str, digest_html: str):
-    """Send a nicely formatted HTML email with the digest."""
-
     email_from = os.environ["EMAIL_FROM"]
     email_to = os.environ["EMAIL_TO"]
     smtp_server = os.environ["SMTP_SERVER"]
