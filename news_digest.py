@@ -168,7 +168,7 @@ def ask_ai_for_digest(headlines_text: str) -> str:
     Calls OpenAI to:
     - Apply editorial filtering
     - Create precise story groups (no over-grouping)
-    - Categorise into sections
+    - Limit total number of stories
     - Output summary-only, clickable HTML
     - Append 4 personal-growth sections
     """
@@ -231,14 +231,14 @@ Hard rules:
 - No item may appear in more than one group.
 
 BALANCE RULE – LIMIT PER EVENT:
-- If a story cluster has more than 3 items, include at most 3 representative items
-  (1 main + up to 2 "also covered by") and IGNORE the rest of that cluster.
-- Never create more than ONE group per underlying event.
-- Aim for a diverse, readable digest rather than repeating the same story many times.
+- For each underlying event, choose ONE best headline as the representative item.
+- Ignore the rest for output (you do NOT need to list “also covered by” sources).
 
-OVERALL LENGTH:
-- After grouping, include at most 30 story groups in total.
-- If there are more groups, keep the most important by business/market impact.
+OVERALL LENGTH – VERY IMPORTANT:
+- After grouping, you MUST include AT MOST 25 story groups in total
+  (across all sections combined).
+- If there are more than 25 groups, choose the most important ones by
+  business/market impact and drop the rest from the output.
 
 
 ==============================================================
@@ -272,15 +272,6 @@ For each section you actually use, output:
       </a>
       <span> (Source: MAIN_SOURCE)</span>
     </p>
-
-    <!-- Include this ONLY if group has multiple items -->
-    <ul>
-      <li><b>Also covered by:</b></li>
-      <ul>
-        <li>SOURCE_2 – <a href="LINK_2" target="_blank">LINK_2</a></li>
-        <!-- more items if needed, up to 2 extra links total -->
-      </ul>
-    </ul>
   </div>
 
 </div>
@@ -289,13 +280,11 @@ SUMMARY RULES:
 - DO NOT repeat or closely paraphrase the headline.
 - The summary MUST add value: mention what changed and who/what is affected.
 - Use ONLY what can be inferred from the titles (no invented figures, dates, or quotes).
-- Keep it to one sentence (ideally under 30 words).
-
+- Keep it to one sentence (ideally under 25–30 words).
 
 RULES FOR MAIN LINK:
 - Choose the clearest, most representative headline as MAIN_HEADLINE.
 - Use its URL as MAIN_LINK.
-- All other items in the group go under “Also covered by”.
 
 
 ==============================================================
@@ -315,7 +304,7 @@ These sections must ALWAYS be present.
     <ul>
       <li><b>What it is:</b> one-sentence explanation.</li>
       <li><b>Why this opportunity exists now:</b> one sentence tied to current business or tech trends.</li>
-      <li><b>How to execute:</b> 3–5 simple, realistic steps.</li>
+      <li><b>How to execute:</b> 3–4 simple, realistic steps.</li>
       <li><b>Example:</b> practical illustration of someone doing something similar.</li>
     </ul>
   </div>
@@ -381,11 +370,12 @@ End of instructions.
     response = client.responses.create(
         model="gpt-4.1",
         input=prompt,
-        max_output_tokens=4000,
+        max_output_tokens=2500,
         temperature=0.2,
     )
 
     return response.output_text.strip()
+
 
 
 # =======================
