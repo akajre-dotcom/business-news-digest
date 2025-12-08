@@ -166,10 +166,10 @@ def build_headlines_text(items: List[Dict]) -> str:
 def ask_ai_for_digest(headlines_text: str) -> str:
     """
     Calls OpenAI to:
-    - Apply editorial filtering
-    - Create precise story groups (no over-grouping)
-    - Limit total number of stories
-    - Output summary-only, clickable HTML
+    - Filter to serious business/economic news
+    - Pick a small set of high-impact, diverse stories
+    - Use at most 1 story per company/theme
+    - Output short, clickable summary-only HTML
     - Append 4 personal-growth sections
     """
 
@@ -189,73 +189,76 @@ INPUT ITEMS:
 
 
 ==============================================================
-BEFORE GROUPING – APPLY PROFESSIONAL NEWSROOM FILTER
+STEP 0 – PROFESSIONAL NEWSROOM FILTER
 ==============================================================
 
-Filter the headlines STRICTLY — keep only REAL business/economic/corporate/
-regulatory/markets/macroeconomic stories.
+Filter headlines STRICTLY — keep ONLY serious business/economic content.
 
-EXCLUDE completely:
-- Celebrity / OTT / entertainment / gossip items.
-- Crime/court drama unless they clearly affect a company, sector, or market.
+EXCLUDE completely (do NOT mention or summarise these):
+- Celebrity / OTT / entertainment / gossip.
+- Crime/court drama unless it clearly affects a business, company, sector, or market.
 - Viral videos, outrage, memes, human-interest odd stories.
-- Lifestyle, travel, festivals, weather.
-- Politics with no measurable business or policy impact.
-- Local accidents or general news with no corporate or economic effect.
+- Lifestyle, travel pieces, festivals, weather.
+- Pure politics with no business, market, or policy consequence.
+- Local accidents or general news with no corporate or macro impact.
 
 KEEP ONLY IF the story clearly affects:
-- Companies, sectors, corporate governance, earnings or strategy.
-- Stocks, bonds, commodities, currencies, crypto.
-- RBI / central bank actions, regulation, taxation, policy changes.
-- Macro indicators, trade, inflation, GDP, fiscal issues.
-- Startups, funding, IPOs, acquisitions, PE/VC deals.
-- Gold, jewellery, gems / diamond retail with commercial impact.
+- Companies, sectors, competition, governance, earnings, strategy.
+- Financial markets: stocks, bonds, commodities, currencies, crypto.
+- RBI / central bank / regulators / taxation / policy changes.
+- Macro indicators: GDP, inflation, trade, fiscal.
+- Startups, funding, IPOs, acquisitions, PE/VC.
+- Gold, jewellery, gems / diamond retail trends with commercial impact.
 
-If relevance is not obvious → EXCLUDE.
-
-
-==============================================================
-TASK 1 – CREATE PRECISE STORY GROUPS (STRICT)
-==============================================================
-
-Group headlines ONLY if they refer to the SAME SPECIFIC EVENT.
-
-Rules:
-1. Same company ≠ same event. Group ONLY if it is the same announcement/issue.
-2. Same sector ≠ same event.
-3. Similar theme ≠ same event.
-4. When unsure → KEEP AS SEPARATE GROUPS.
-
-Hard rules:
-- Every remaining item must appear in EXACTLY ONE story group.
-- No item may appear in more than one group.
-
-BALANCE RULE – LIMIT PER EVENT:
-- For each underlying event, choose ONE best headline as the representative item.
-- Ignore the rest for output (you do NOT need to list “also covered by” sources).
-
-OVERALL LENGTH – VERY IMPORTANT:
-- After grouping, you MUST include AT MOST 25 story groups in total
-  (across all sections combined).
-- If there are more than 25 groups, choose the most important ones by
-  business/market impact and drop the rest from the output.
+If relevance is not obvious → EXCLUDE it.
 
 
 ==============================================================
-TASK 2 – ASSIGN EACH GROUP TO ONE SECTION
+STEP 1 – SELECT DISTINCT, HIGH-IMPACT STORIES
 ==============================================================
 
-Choose exactly ONE section per group:
+From the filtered headlines, select a small, *diverse* set of stories.
+
+HARD LIMITS:
+- You MUST output AT MOST 10 news stories in total (across all sections).
+- For any single company / instrument / crisis / theme
+  (e.g. one airline crisis, one specific IPO, one specific RBI move),
+  you may output AT MOST 1 summary in the entire digest.
+
+This means:
+- If there are 15 headlines about the same airline disruption,
+  you MUST mentally combine them and output JUST ONE summary for that topic.
+- If there are many headlines about the same macro topic (e.g. a single RBI
+  liquidity decision), output at most one well-phrased summary.
+- Prioritise breadth and variety over completeness.
+
+PRIORITISE:
+- Systemic impact (economy, markets, RBI, major policy).
+- Big corporate moves (M&A, funding, IPOs, major sector shifts).
+- Clear investor / sector impact.
+- Jewellery / gold where there is real business relevance.
+
+Do NOT try to cover every filtered headline.  
+Pick the ~10 most important and distinct stories.
+
+
+==============================================================
+STEP 2 – ASSIGN EACH STORY TO ONE SECTION
+==============================================================
+
+Each chosen story must go to EXACTLY ONE of:
 
 A. 🇮🇳 India – Economy, Markets, Corporate, Sectors, Startups & Deal  
 B. 🌏 Global – Economy, Markets, Corporate, Sectors, Startups & Deal  
-C. 💍 Jewellery, Gold, Gems & Retail sector  
+C. 💍 Jewellery, Gold, Gems & Retail  
 D. 🧩 Other Business related & Consumer Trends  
 E. 📈 Stock Market – Shares, Prices, Analysis  
 
+Choose the section that best fits the main focus of the story.
+
 
 ==============================================================
-TASK 3 – OUTPUT FORMAT (STRICT HTML ONLY, SUMMARY-ONLY)
+STEP 3 – OUTPUT FORMAT (STRICT HTML ONLY, CLICKABLE SUMMARY)
 ==============================================================
 
 For each section you actually use, output:
@@ -266,34 +269,32 @@ For each section you actually use, output:
   <div class="story">
     <p>
       <a href="MAIN_LINK" target="_blank">
-        <b></b>
-        ONE short sentence explaining what happened and why it matters,
-        written in simple English.
+        <b>Summary:</b>
+        ONE short sentence in clean, neutral English describing
+        what happened and why it matters.
       </a>
       <span> (Source: MAIN_SOURCE)</span>
     </p>
   </div>
 
+  <!-- more <div class="story"> blocks -->
+
 </div>
 
 SUMMARY RULES:
-- DO NOT repeat or closely paraphrase the headline.
-- The summary MUST add value: mention what changed and who/what is affected.
-- Use ONLY what can be inferred from the titles (no invented figures, dates, or quotes).
-- Keep it to one sentence (ideally under 25–30 words).
-
-RULES FOR MAIN LINK:
-- Choose the clearest, most representative headline as MAIN_HEADLINE.
-- Use its URL as MAIN_LINK.
+- The summary itself must be clickable (inside the <a> tag).
+- Do NOT just repeat the headline; add value:
+  - mention the type/direction of change and who/what is affected (sector, investors, policy, company).
+- Use ONLY what can be inferred from the titles (no invented numbers, quotes, or dates).
+- Each summary MUST be exactly ONE sentence.
 
 
 ==============================================================
-AFTER ALL NEWS SECTIONS — ADD THESE FOUR VALUE-ADD SECTIONS
+STEP 4 – APPEND FOUR PERSONAL-GROWTH SECTIONS
 ==============================================================
 
-After you finish ALL news sections, you MUST append EXACTLY these four sections,
-in this order, even if there were very few or no valid news items.
-These sections must ALWAYS be present.
+After ALL news sections (A–E), ALWAYS append these four sections
+in this exact order, even if there were very few news items.
 
 1️⃣ 💡 Monetizable Idea of the Day
 ---------------------------------
@@ -305,7 +306,7 @@ These sections must ALWAYS be present.
       <li><b>What it is:</b> one-sentence explanation.</li>
       <li><b>Why this opportunity exists now:</b> one sentence tied to current business or tech trends.</li>
       <li><b>How to execute:</b> 3–4 simple, realistic steps.</li>
-      <li><b>Example:</b> practical illustration of someone doing something similar.</li>
+      <li><b>Example:</b> a practical illustration of someone doing something similar.</li>
     </ul>
   </div>
 </div>
@@ -332,8 +333,8 @@ These sections must ALWAYS be present.
     <h3>CAREER SKILL</h3>
     <ul>
       <li><b>What it is:</b> one-sentence definition.</li>
-      <li><b>Why it matters:</b> how it helps in promotions, leadership, or workplace impact.</li>
-      <li><b>How to apply:</b> 2–3 practical steps.</li>
+      <li><b>Why it matters:</b> how it helps in promotions, leadership, or impact.</li>
+      <li><b>How to apply:</b> 2–3 concrete actions.</li>
     </ul>
   </div>
 </div>
@@ -346,8 +347,8 @@ These sections must ALWAYS be present.
     <h3>MENTAL MODEL NAME</h3>
     <ul>
       <li><b>What it is:</b> simple explanation.</li>
-      <li><b>Why it helps:</b> how it improves decision-making in business or investing.</li>
-      <li><b>How to use it:</b> 2–3 actionable steps or examples.</li>
+      <li><b>Why it helps:</b> how it improves decisions in business or investing.</li>
+      <li><b>How to use it:</b> 2–3 actionable examples or steps.</li>
     </ul>
   </div>
 </div>
@@ -358,10 +359,12 @@ NON-NEGOTIABLE OUTPUT RULES
 ==============================================================
 
 - Use ONLY information from the input titles for news summaries.
+- You may drop less-important headlines completely to respect
+  the 10-story and 1-story-per-theme limits.
 - Do NOT invent URLs.
 - Do NOT output numeric IDs.
 - Output must be PURE HTML.
-- Do NOT output <html>, <head> or <body> tags.
+- Do NOT output <html>, <head>, or <body> tags.
 - The four value-add sections at the end are MANDATORY.
 
 End of instructions.
@@ -370,11 +373,12 @@ End of instructions.
     response = client.responses.create(
         model="gpt-4.1",
         input=prompt,
-        max_output_tokens=2500,
+        max_output_tokens=3000,  # more room so it doesn't cut off
         temperature=0.2,
     )
 
     return response.output_text.strip()
+
 
 
 
