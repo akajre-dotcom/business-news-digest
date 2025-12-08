@@ -249,7 +249,7 @@ Choose exactly ONE section per group:
 
 A. 🇮🇳 India – Economy, Markets, Corporate, Sectors, Startups & Deal  
 B. 🌏 Global – Economy, Markets, Corporate, Sectors, Startups & Deal  
-C. 💍 Jewellery, Gold, Gems & Retail  
+C. 💍 Jewellery, Gold, Gems & Retail sector  
 D. 🧩 Other Business related & Consumer Trends  
 E. 📈 Stock Market – Shares, Prices, Analysis  
 
@@ -266,7 +266,7 @@ For each section you actually use, output:
   <div class="story">
     <p>
       <a href="MAIN_LINK" target="_blank">
-        <b>Summary:</b>
+        <b></b>
         ONE short sentence explaining what happened and why it matters,
         written in simple English.
       </a>
