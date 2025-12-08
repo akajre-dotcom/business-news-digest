@@ -262,32 +262,6 @@ STEP 3 – OUTPUT FORMAT (STRICT HTML ONLY, CLICKABLE SUMMARY)
 
 For each section you actually use, output:
 
-<h2>SECTION TITLE</h2>
-<div class="section">
-
-  <div class="story">
-    <p>
-      <a href="MAIN_LINK" target="_blank">
-        <b>Summary:</b>
-        ONE short sentence in clean, neutral English describing
-        what happened and why it matters.
-      </a>
-      <span> (Source: MAIN_SOURCE)</span>
-    </p>
-  </div>
-
-  <!-- more <div class="story"> blocks -->
-
-</div>
-
-SUMMARY RULES:
-- The summary itself must be clickable (inside the <a> tag).
-- Do NOT just repeat the headline; add value:
-  - mention the type/direction of change and who/what is affected (sector, investors, policy, company).
-- Use ONLY what can be inferred from the titles (no invented numbers, quotes, or dates).
-- Each summary MUST be exactly ONE sentence.
-
-
 ==============================================================
 AFTER ALL NEWS SECTIONS — ADD THESE SEVEN DAILY VALUE-UPGRADES
 ==============================================================
@@ -412,6 +386,34 @@ Rules for this section:
     </ul>
   </div>
 </div>
+
+
+<h2>SECTION TITLE</h2>
+<div class="section">
+
+  <div class="story">
+    <p>
+      <a href="MAIN_LINK" target="_blank">
+        <b>:</b>
+        ONE short sentence in clean, neutral English describing
+        what happened and why it matters.
+      </a>
+      <span> (Source: MAIN_SOURCE)</span>
+    </p>
+  </div>
+
+  <!-- more <div class="story"> blocks -->
+
+</div>
+
+SUMMARY RULES:
+- The summary itself must be clickable (inside the <a> tag).
+- Do NOT just repeat the headline; add value:
+  - mention the type/direction of change and who/what is affected (sector, investors, policy, company).
+- Use ONLY what can be inferred from the titles (no invented numbers, quotes, or dates).
+- Each summary MUST be exactly ONE sentence.
+
+
 
 
 ==============================================================
