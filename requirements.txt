@@ -1,0 +1,6 @@
+feedparser
+requests
+beautifulsoup4
+pytz
+openai>=1.0.0
+tqdm
