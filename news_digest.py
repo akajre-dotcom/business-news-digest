@@ -168,116 +168,99 @@ def build_headlines_text(items: List[Dict]) -> str:
 # 4. CALL OPENAI – CLUSTER + CATEGORIZE
 # =======================
 
-def ask_ai_for_digest(headlines_text: str) -> str:
-    """
-    Ask OpenAI to:
-    - Group only truly similar items (same event)
-    - Use ALL items exactly once
-    - Make headline clickable
-    - Output clean grouped HTML
-    """
+You are an expert business journalist and senior newsroom editor.
 
-    if "OPENAI_API_KEY" not in os.environ:
-        raise RuntimeError("OPENAI_API_KEY environment variable is not set")
-
-    client = OpenAI()  # reads OPENAI_API_KEY from env
-
-    prompt = f"""
-You are an expert financial and business journalist for an audience.
-
-You receive a flat list of news items from multiple business/markets/jewellery RSS feeds.
+You receive a flat list of news items from multiple business, finance, markets, industry, and jewellery RSS feeds.
 Each item has: numeric ID, [Source], Title, Link.
 
 INPUT ITEMS:
 {headlines_text}
 
----------------- BEFORE GROUPING – APPLY NEWSROOM FILTER ----------------
-As a senior business editor, filter the input headlines STRICTLY.
 
-You must EXCLUDE ALL ITEMS that do NOT have clear and direct business,
-economic, financial, corporate, policy, markets, trade, commodities,
-startup, taxation, banking, investing or industry relevance.
+==============================================================
+BEFORE GROUPING – APPLY PROFESSIONAL NEWSROOM FILTER
+==============================================================
 
-EXCLUDE completely (do not summarise, do not group, do not output):
-- Celebrity news, influencers, actors, entertainment, movies, OTT, gossip.
-- Crime reports, FIRs, court cases unrelated to business impact.
-- Viral videos, memes, social media trends, public outbursts, human-interest stories.
-- Pure politics without measurable economic or business consequence.
-- General news: weather, accidents, natural disasters, protests, cultural events.
-- Local incidents with zero corporate, regulatory, macroeconomic, retail, or investor impact.
-- General lifestyle advice, travel stories, festival stories, personal anecdotes.
+Filter the headlines STRICTLY, as a real business editor would.
 
-KEEP ONLY IF the item CLEARLY affects:
-- Companies, sectors, earnings, growth, competitive dynamics.
-- Markets: equities, debt, commodities, currencies, crypto, derivatives.
-- Policy/regulation with business or economic impact.
-- Banking, NBFCs, mutual funds, insurance, pensions, taxation.
-- Macro indicators: GDP, inflation, RBI decisions, fiscal issues, trade data.
-- Startups, funding, VC/PE, IPOs, acquisitions, mergers.
-- Consumer behaviour-shifting trends WITH economic relevance.
-- Jewellery, gold, gems, diamonds, bullion, hallmarking, retail trends.
+KEEP ONLY stories with *clear* business, economic, financial, corporate,
+industry, markets, regulatory, commodities, or macro relevance.
 
-If a headline’s economic/business impact is NOT obvious → **EXCLUDE IT**.
-If the impact is indirect BUT real → **KEEP IT**.
+Exclude completely (do NOT summarise, do NOT group, do NOT output):
+- Celebrity / influencer / entertainment / OTT / gossip items.
+- Crime, FIRs, court cases unless they directly affect a business, market, or company.
+- Viral videos, social-media drama, human-interest stories.
+- Politics with no measurable economic or regulatory consequence.
+- Local accidents, weather, disasters, lifestyle stories, travel guides.
+- Irrelevant consumer content without business impact.
 
-After filtering, only use the remaining items for grouping and summary.
+KEEP headlines ONLY IF they directly affect:
+- Companies, sectors, competition, corporate governance.
+- Stock markets, bonds, commodities, currencies, crypto.
+- RBI/central bank actions, regulation, taxation, policy changes.
+- Trade, macro data, inflation, GDP, exports/imports.
+- Startups, funding rounds, M&A, IPOs, PE/VC deals.
+- Jewellery/gold/gems/diamond retail trends with commercial impact.
+
+If relevance is not obvious → EXCLUDE.
 
 
----------------- TASK 1 – CREATE STORY GROUPS (STRICTLY) ----------------
-You are acting as a senior news editor responsible for organising headlines into
-clean, publication-ready story groups.
+==============================================================
+TASK 1 – CREATE PRECISE STORY GROUPS (STRICT)
+==============================================================
 
-Your goal is to identify which headlines refer to the **same underlying news event**.
+Your goal is to identify news items that describe the *same underlying event*.
 
-EDITORIAL GROUPING RULES (STRICT):
+EDITORIAL GROUPING PRINCIPLES (universal, not tied to any company):
 
-1. Group items ONLY when they clearly describe the *exact same event*.
-   Examples of valid grouping:
-   - Multiple outlets reporting on the same IndiGo operational disruption.
-   - Multiple headlines about the SAME RBI decision or liquidity action.
-   - Different sources covering the SAME corporate announcement, earnings release,
-     funding round, merger, regulation, or geopolitical incident.
+1. Group items ONLY when they clearly refer to the SAME SPECIFIC EVENT.
 
-2. Treat stories as SEPARATE when they are:
-   - About different events within the same broad theme (e.g., general market moves,
-     different RBI viewpoints, unrelated gold price changes).
-   - About the same company but referring to different actions, dates, or issues.
-   - About similar macro/economic topics but not about the same specific event.
+2. Treat headlines as SEPARATE when:
+   - They relate to different events even within the same sector.
+   - They mention the same company but deal with different announcements.
+   - They cover different market movements, economic opinions, forecasts, etc.
 
-3. When in doubt, DO NOT merge.
-   It is always safer to keep two items in different groups than to incorrectly
-   combine unrelated events.
+3. When uncertain → KEEP THEM IN SEPARATE GROUPS.
+   Over-merging is worse than under-merging.
 
-4. Precision matters:
-   - Two headlines are “related” only if a reader would reasonably expect them to
-     appear under the same story on a news homepage.
-   - Do not group items merely because they mention similar sectors, topics, or actors.
+4. HARD RULES:
+   - EVERY input item (every ID) MUST appear in exactly ONE story group.
+   - NO item may appear in more than one group.
+   - NO item may be silently dropped (except those removed in the newsroom filter).
 
-HARD NON-NEGOTIABLE RULES:
+5. BALANCE RULE – AVOID DOMINATION:
+   To maintain a readable, newspaper-quality digest:
+   - Do NOT allow any single event to dominate the briefing.
+   - If a story has more than 6 related items, create:
+       (a) one main story group, and  
+       (b) one overflow group for the remaining related headlines.
+   - Never produce more than TWO groups about the same event.
+   - This rule applies to ALL events, generically.
 
-- EVERY input item (every ID) must appear in EXACTLY ONE story group.
-- Do NOT omit, discard, or merge away any item.
-- An item may NEVER appear in more than one group.
-- Groups may contain:
-  - 1 item (unique story)
-  - Many items (same event covered by multiple sources)
-
-Think like a professional editor producing a clean, organised briefing.
-Your groupings must remain fact-based, conservative, and highly precise.
+6. Maintain overall diversity:
+   Your grouping must ensure the digest covers a range of sectors, markets,
+   corporate activity, policy developments, and global macro themes.
 
 
----------------- TASK 2 – CATEGORISE EACH GROUP ----------------
-Assign each story group to exactly ONE of these sections:
+==============================================================
+TASK 2 – ASSIGN STORY GROUPS TO SECTIONS
+==============================================================
 
-A. 🇮🇳 India – Economy & Markets  
-B. 🇮🇳 India – Corporate, Sectors, Startups & Deals  
-C. 🌏 Global – Markets & Macro  
-D. 💍 Jewellery, Gold, Gems & Retail  
-E. 🧩 Other Business & Consumer Trends  
+Each story group must be placed in EXACTLY ONE of these sections:
 
-Pick the section that best fits the MAIN focus of that group.
+A. 🇮🇳 India – Economy & Markets
+B. 🇮🇳 India – Corporate, Sectors, Startups & Deals
+C. 🌏 Global – Markets & Macro
+D. 💍 Jewellery, Gold, Gems & Retail
+E. 🧩 Other Business & Consumer Trends
 
----------------- TASK 3 – OUTPUT FORMAT (HTML ONLY) ----------------
+Choose the section that best represents the *main focus* of the group.
+
+
+==============================================================
+TASK 3 – OUTPUT FORMAT (STRICT HTML-ONLY)
+==============================================================
+
 For each section you use, output:
 
 <h2>SECTION TITLE</h2>
@@ -288,10 +271,12 @@ For each section you use, output:
       <a href="MAIN_LINK" target="_blank">MAIN HEADLINE (Source)</a>
     </h3>
 
-    <p><b>Summary:</b> 1–3 sentences in simple English, combining information inferred from
-       the grouped titles ONLY. Do NOT invent numbers, dates or specific details that are not in the titles.</p>
+    <p><b>Summary:</b>
+       1–3 crisp sentences in clean, neutral English, combining ONLY the facts
+       implied by the grouped titles. Do NOT invent details not present in the input.
+    </p>
 
-    <!-- If group has more than 1 item -->
+    <!-- Include this ONLY if the group has multiple items -->
     <ul>
       <li><b>Also covered by:</b></li>
       <ul>
@@ -299,47 +284,29 @@ For each section you use, output:
         <li>Source – <a href="LINK_3" target="_blank">LINK_3</a></li>
       </ul>
     </ul>
-    <!-- If group has only 1 item, OMIT the "Also covered by" block entirely. -->
-
   </div>
 
-  <!-- more <div class="story"> blocks, one per story group -->
+  <!-- More <div class="story"> blocks, one per story group -->
 
 </div>
 
----------------- RULES FOR MAIN HEADLINE ----------------
-- Choose ONE item in the group whose headline best describes the event.
-- Its link becomes MAIN_LINK.
-- All other items in the group go under "Also covered by".
+RULES FOR MAIN HEADLINE SELECTION:
+- Pick the clearest headline that best describes the event.
+- Use its link as MAIN_LINK.
+- All other group items go under “Also covered by”.
 
----------------- HARD CONSTRAINTS ----------------
-- EVERY input item (each ID) MUST appear in exactly ONE story group.
-- NO item may be omitted or silently dropped.
-- NO item may appear in more than one group.
-- Do NOT output the numeric IDs in the final HTML.
-- Do NOT invent any URL or news.
-- Do NOT output any text outside HTML tags.
-- Do NOT output <html>, <head> or <body> tags.
+==============================================================
+ADDITIONAL HARD CONSTRAINTS
+==============================================================
 
-Use ONLY information from titles and sources. No external knowledge.
-Output MUST be valid HTML only. No markdown, no commentary.
-"""
+- Do NOT use numeric IDs in the final output.
+- Do NOT invent URLs, facts, or details.
+- Do NOT output anything outside the required HTML.
+- Do NOT include <html>, <head>, or <body>.
+- The output must be valid HTML only.
+- Use ONLY the text provided. No external knowledge.
 
-    response = client.responses.create(
-        # 🔁 SWITCH MODEL HERE:
-        # "gpt-4.1-mini"  -> cheaper
-        # "gpt-4.1"       -> smarter grouping
-        model="gpt-4.1",          # <--- try upgrading to this for better grouping
-        input=prompt,
-        max_output_tokens=6500,
-        temperature=0.2,
-    )
-
-    return response.output_text.strip()
-
-
-
-
+End of instructions.
 
 
 # =======================
