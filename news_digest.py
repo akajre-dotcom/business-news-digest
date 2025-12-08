@@ -171,12 +171,13 @@ def ask_ai_for_digest(headlines_text: str) -> str:
     - Create precise story groups (no over-grouping)
     - Categorise into sections
     - Output clean, newspaper-quality HTML
+    - Append 4 personal-growth sections
     """
 
     if "OPENAI_API_KEY" not in os.environ:
         raise RuntimeError("OPENAI_API_KEY environment variable is not set")
 
-    client = OpenAI()  # reads OPENAI_API_KEY from environment
+    client = OpenAI()
 
     prompt = f"""
 You are an expert business journalist and senior newsroom editor.
@@ -192,128 +193,167 @@ INPUT ITEMS:
 BEFORE GROUPING – APPLY PROFESSIONAL NEWSROOM FILTER
 ==============================================================
 
-Filter the headlines STRICTLY, as a real business editor would.
+Filter the headlines STRICTLY — keep only REAL business/economic/corporate/
+regulatory/markets/macroeconomic stories.
 
-KEEP ONLY stories with *clear* business, economic, financial, corporate,
-industry, markets, regulatory, commodities, or macro relevance.
+EXCLUDE completely:
+- Celebrity / OTT / entertainment
+- Crime/court drama unless business-impacting
+- Viral videos, outrage, memes
+- Lifestyle, travel, festivals, weather
+- Politics with no business impact
+- Local accidents or general news with no corporate effect
 
-Exclude completely (do NOT summarise, do NOT group, do NOT output):
-- Celebrity / influencer / entertainment / OTT / gossip items.
-- Crime, FIRs, court cases unless they directly affect a business, market, or company.
-- Viral videos, social-media drama, human-interest stories.
-- Politics with no measurable economic or regulatory consequence.
-- Local accidents, weather, disasters, lifestyle stories, travel guides.
-- Irrelevant consumer content without business impact.
-
-KEEP headlines ONLY IF they directly affect:
-- Companies, sectors, competition, corporate governance.
-- Stock markets, bonds, commodities, currencies, crypto.
-- RBI/central bank actions, regulation, taxation, policy changes.
-- Trade, macro data, inflation, GDP, exports/imports.
-- Startups, funding rounds, M&A, IPOs, PE/VC deals.
-- Jewellery/gold/gems/diamond retail trends with commercial impact.
-
-If relevance is not obvious → EXCLUDE.
+KEEP ONLY IF the story clearly affects:
+- Companies, sectors, corporate governance
+- Stocks, bonds, commodities, currencies, crypto
+- RBI + regulatory decisions
+- Macro indicators, trade, inflation, GDP
+- Startups, funding, IPOs, acquisitions
+- Gold, jewellery, gems retail trends
 
 
 ==============================================================
 TASK 1 – CREATE PRECISE STORY GROUPS (STRICT)
 ==============================================================
 
-Your goal is to identify news items that describe the *same underlying event*.
+Group headlines ONLY if they refer to the SAME SPECIFIC EVENT.
 
-EDITORIAL GROUPING PRINCIPLES:
+Rules:
+1. Same company ≠ same event. Group ONLY if it's the same announcement/issue.
+2. Same sector ≠ same event.
+3. Similar themes ≠ same event.
+4. When unsure → KEEP SEPARATE.
 
-1. Group items ONLY when they clearly refer to the SAME SPECIFIC EVENT.
-   Examples:
-   - Same airline disruption reported by multiple media outlets.
-   - Same RBI decision mentioned in multiple headlines.
-   - Same earnings report, funding round, merger announcement, regulation, or macro data release.
+Hard rules:
+- Every remaining item must appear in EXACTLY ONE story group.
+- No item may appear twice.
+- No item may be silently omitted.
 
-2. Keep stories SEPARATE when:
-   - They are different events in the same sector.
-   - They involve the same company but different issues or announcements.
-   - They concern different market movements or economic opinions.
-
-3. When uncertain → KEEP AS SEPARATE GROUPS.
-
-4. HARD RULES:
-   - EVERY remaining item must appear in EXACTLY ONE story group.
-   - NO item may appear in more than one group.
-   - NO item may be omitted (except items excluded by newsroom filtering).
-
-5. BALANCE RULE – AVOID DIGEST DOMINATION:
-   - If a story cluster has more than 15 items, split into:
-       (a) a main story group  
-       (b) one overflow group  
-   - Never create more than TWO groups for the same underlying event.
-   - Keep the digest diverse and readable.
-
-6. Aim for professional editorial judgment:
-   - Groups should resemble how stories appear on a real business news homepage.
+BALANCE RULE:
+- If a cluster has more than 15 items, split into:
+  (a) main story group
+  (b) overflow group
+- Never exceed 2 groups per event.
+- Ensure digest diversity.
 
 
 ==============================================================
 TASK 2 – ASSIGN EACH GROUP TO ONE SECTION
 ==============================================================
 
-Each story group must belong to EXACTLY ONE of:
+Choose exactly ONE section per group:
 
-A. 🇮🇳 India – Economy, Markets, Corporate, Sectors, Startups & Deal
-B. Global – Economy, Markets, Corporate, Sectors, Startups & Deal
-C. Jewellery, Gold, Gems & Retail  
-D. Other Business related & Consumer Trends 
-E. Stock Market - Share, Price etc
-
-Choose the section best matching the *main focus* of the group.
+A. 🇮🇳 India – Economy, Markets, Corporate, Sectors, Startups & Deal  
+B. 🌏 Global – Economy, Markets, Corporate, Sectors, Startups & Deal  
+C. 💍 Jewellery, Gold, Gems & Retail  
+D. 🧩 Other Business related & Consumer Trends  
+E. 📈 Stock Market – Shares, Prices, Analysis  
 
 
 ==============================================================
 TASK 3 – OUTPUT FORMAT (STRICT HTML ONLY)
 ==============================================================
 
-For each section you use, output:
+For each section:
 
 <h2>SECTION TITLE</h2>
 <div class="section">
 
   <div class="story">
-    <h3>
-      <a href="MAIN_LINK" target="_blank">MAIN HEADLINE (Source)</a>
-    </h3>
+    <h3><a href="MAIN_LINK" target="_blank">MAIN HEADLINE (Source)</a></h3>
 
-    <p><b>Summary:</b>
-       1–3 sentences in clean, neutral English. Summarise ONLY what can be inferred
-       from the grouped titles. Do NOT invent details or dates.
-    </p>
+    <p><b>Summary:</b> 1–3 sentences, clean, neutral English.
+       Summaries MUST use ONLY what is inferable from titles. No invented facts.</p>
 
-    <!-- Include this ONLY if group has multiple items -->
+    <!-- MULTIPLE ITEMS ONLY -->
     <ul>
       <li><b>Also covered by:</b></li>
       <ul>
         <li>Source – <a href="LINK_2" target="_blank">LINK_2</a></li>
-        <li>Source – <a href="LINK_3" target="_blank">LINK_3</a></li>
       </ul>
     </ul>
+
   </div>
 
 </div>
 
-RULES FOR MAIN HEADLINE:
-- Choose the clearest headline that represents the event.
-- Use its link as the MAIN_LINK.
-- All others go under “Also covered by”.
+
+==============================================================
+AFTER ALL NEWS SECTIONS — ADD THESE FOUR VALUE-ADD SECTIONS
+==============================================================
+
+1️⃣ 💡 Monetizable Idea of the Day
+---------------------------------
+<h2>💡 Monetizable Idea of the Day</h2>
+<div class="section">
+  <div class="story">
+    <h3>IDEA TITLE</h3>
+    <ul>
+      <li><b>What it is:</b> one-sentence explanation.</li>
+      <li><b>Why this opportunity exists now:</b> one sentence tied to current business or tech trends.</li>
+      <li><b>How to execute:</b> 3–5 simple, realistic steps.</li>
+      <li><b>Example:</b> practical illustration of someone doing something similar.</li>
+    </ul>
+  </div>
+</div>
+
+
+2️⃣ 🗣 Communication Upgrade of the Day
+--------------------------------------
+<h2>🗣 Communication Upgrade of the Day</h2>
+<div class="section">
+  <div class="story">
+    <h3>SKILL NAME</h3>
+    <ul>
+      <li><b>What it is:</b> simple definition.</li>
+      <li><b>Why it works:</b> psychological/business reason.</li>
+      <li><b>How to apply:</b> 2–3 practical steps users can use today.</li>
+    </ul>
+  </div>
+</div>
+
+
+3️⃣ 🚀 Career Upgrade of the Day
+--------------------------------
+<h2>🚀 Career Upgrade of the Day</h2>
+<div class="section">
+  <div class="story">
+    <h3>CAREER SKILL</h3>
+    <ul>
+      <li><b>What it is:</b> one-sentence definition.</li>
+      <li><b>Why it matters:</b> how it improves leadership, promotions, or workplace impact.</li>
+      <li><b>How to apply:</b> 2–3 practical steps.</li>
+    </ul>
+  </div>
+</div>
+
+
+4️⃣ 🧠 Business Mental Model of the Day
+--------------------------------------
+<h2>🧠 Business Mental Model of the Day</h2>
+<div class="section">
+  <div class="story">
+    <h3>MENTAL MODEL NAME</h3>
+    <ul>
+      <li><b>What it is:</b> simple explanation.</li>
+      <li><b>Why it helps:</b> how it improves decision-making in business or investing.</li>
+      <li><b>How to use it:</b> 2–3 actionable steps or examples.</li>
+    </ul>
+  </div>
+</div>
+
 
 ==============================================================
 NON-NEGOTIABLE OUTPUT RULES
 ==============================================================
 
-- Use ONLY information from input titles.
-- NO numeric IDs in final HTML.
-- NO invented URLs or facts.
-- NO text outside HTML.
-- NO <html>, <head> or <body> tags.
-- Output must be pure HTML.
+- Use ONLY information from the input titles.
+- NO numeric IDs.
+- NO invented facts or URLs.
+- Output must be PURE HTML.
+- No markdown.
+- No <html>, <head>, <body> tags.
 
 End of instructions.
 """
@@ -321,11 +361,12 @@ End of instructions.
     response = client.responses.create(
         model="gpt-4.1",
         input=prompt,
-        max_output_tokens=6500,
+        max_output_tokens=7000,
         temperature=0.2,
     )
 
     return response.output_text.strip()
+
 
 
 
