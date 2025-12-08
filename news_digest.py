@@ -171,10 +171,10 @@ def build_headlines_text(items: List[Dict]) -> str:
 def ask_ai_for_digest(headlines_text: str) -> str:
     """
     Ask OpenAI to:
-    - Read all headlines (titles + sources + links)
-    - Group items about the same event into story groups
-    - Ensure EVERY item is used exactly once
-    - Output grouped HTML with main + also-covered-by links
+    - Group similar items
+    - Use ALL items exactly once
+    - Make headline itself clickable
+    - Output clean grouped HTML
     """
 
     if "OPENAI_API_KEY" not in os.environ:
@@ -192,83 +192,77 @@ INPUT ITEMS:
 {headlines_text}
 
 ---------------- TASK 1 – CREATE STORY GROUPS ----------------
-Your job is to:
-- Create "story groups", where each group contains one or more items.
-- Items belong to the same group if they clearly refer to the same underlying event
-  (same company and same main action; or same policy decision; or same macro data print).
+Create groups of stories referring to the same underlying event.
 
-VERY IMPORTANT:
-- You MUST assign EVERY input item (each ID) to EXACTLY ONE story group.
-- Do NOT ignore, drop or merge away any item.
-- Some groups will have only 1 item (that's fine).
-- Some groups will have many items (same event covered by different sources).
+Rules:
+- Items go in the same group if they clearly describe the same event/company/news.
+- EVERY input item MUST appear in exactly one group.
+- No item may be ignored or omitted.
+- A group may contain 1 or many items.
 
----------------- TASK 2 – CATEGORISE EACH STORY GROUP ----------------
-Assign each story group to exactly ONE of these sections:
+---------------- TASK 2 – CATEGORISE GROUPS ----------------
+Put each group into exactly one of these sections:
 
-A. 🇮🇳 India – Economy & Markets
-   (RBI, GDP, inflation, fiscal, trade, indices, yields, Nifty, Sensex, macro data)
-B. 🇮🇳 India – Corporate, Sectors, Startups & Deals
-   (company news, results, earnings, funding, IPOs, M&A, sector-specific developments)
-C. 🌏 Global – Markets & Macro
-   (US/Europe/Asia macro, global markets, Fed, ECB, BOJ, global commodities, FX)
-D. 💍 Jewellery, Gold, Gems & Retail
-   (gold prices, jewellery demand, hallmarking, diamond/gem trade, jewellery retailers)
-E. 🧩 Other Business & Consumer Trends
-   (business + tech + consumer trends that don't fit cleanly above)
-
-Every story group MUST go into exactly ONE of the above sections.
+A. 🇮🇳 India – Economy & Markets  
+B. 🇮🇳 India – Corporate, Sectors, Startups & Deals  
+C. 🌏 Global – Markets & Macro  
+D. 💍 Jewellery, Gold, Gems & Retail  
+E. 🧩 Other Business & Consumer Trends  
 
 ---------------- TASK 3 – OUTPUT FORMAT (HTML ONLY) ----------------
-For each section you actually use, output:
+For each section you use, output:
 
 <h2>SECTION TITLE</h2>
 <div class="section">
+
   <div class="story">
-    <h3>MAIN HEADLINE (Main Source)</h3>
-    <p><b>Summary:</b> 1–3 sentences in simple English, combining information from the grouped headlines.
-       Only use what can be inferred from the titles and sources. Do NOT invent numbers or details.</p>
+    <h3>
+      <a href="MAIN_LINK" target="_blank">MAIN HEADLINE (Source)</a>
+    </h3>
+
+    <p><b>Summary:</b> 1–3 sentences combining info inferred from the grouped titles only.  
+       Do NOT invent numbers or details not present in the titles.</p>
+
+    <!-- If more stories in the group -->
     <ul>
-      <li><b>Main link:</b> <a href="MAIN_LINK" target="_blank">MAIN_LINK</a></li>
-      <!-- If there are extra items in this group: -->
       <li><b>Also covered by:</b></li>
       <ul>
-        <li>Source XYZ – <a href="LINK_2" target="_blank">LINK_2</a></li>
-        <li>Source ABC – <a href="LINK_3" target="_blank">LINK_3</a></li>
+        <li>Source – <a href="LINK_2" target="_blank">LINK_2</a></li>
+        <li>Source – <a href="LINK_3" target="_blank">LINK_3</a></li>
       </ul>
-      <!-- If the group has only one item, OMIT the "Also covered by" line and inner list entirely. -->
     </ul>
+
+    <!-- If only one item in the group -->
+    <!-- OMIT the entire “Also covered by” block -->
   </div>
 
-  <!-- more <div class="story"> blocks, one per story group -->
 </div>
 
-Rules for choosing MAIN HEADLINE and MAIN LINK:
-- Pick any one item in the group whose headline best describes the event.
+---------------- RULES FOR MAIN HEADLINE ----------------
+- Choose one item in the group whose headline best describes the event.
 - Its link becomes MAIN_LINK.
-- All other items in the same group go under "Also covered by".
+- All other items go under “Also covered by”.
 
----------------- HARD CONSTRAINTS ----------------
-- EVERY input item must appear in exactly ONE story group.
-- NO item may be omitted.
-- NO item may appear in more than one group.
-- Do NOT output the numeric IDs in the final HTML (they are for your internal grouping only).
-- Do NOT invent any story or URL; ONLY use the Titles, Sources, and Links provided.
+---------------- STRICT RULES ----------------
+- ALL input items MUST be included in exactly one story group.
+- NO drops, no omissions, no merging away of data.
+- NO invented URLs or invented news.
+- Do NOT output the numeric IDs in the final HTML.
 - Do NOT output any text outside HTML tags.
 - Do NOT output <html>, <head>, or <body> tags.
 
-Use ONLY information from titles and sources. No external knowledge.
-Output MUST be valid HTML only. No markdown, no explanations.
+Output ONLY clean HTML as specified.
 """
 
     response = client.responses.create(
         model="gpt-4.1-mini",
         input=prompt,
-        max_output_tokens=6000,
-        temperature=0.2,
+        max_output_tokens=6500,
+        temperature=0.25,
     )
 
     return response.output_text.strip()
+
 
 
 
