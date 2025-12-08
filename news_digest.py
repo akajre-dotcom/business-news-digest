@@ -231,10 +231,8 @@ Hard rules:
 - No item may be silently omitted.
 
 BALANCE RULE:
-- If a cluster has more than 15 items, split into:
-  (a) main story group
-  (b) overflow group
-- Never exceed 2 groups per event.
+- If a cluster has more than 3 items, omitted remaining:
+- Never exceed 1 groups per event.
 - Ensure digest diversity.
 
 
