@@ -179,7 +179,7 @@ def ask_ai_for_digest(headlines_text: str) -> str:
     client = OpenAI()
 
     prompt = f"""
-You are an expert business journalist and senior newsroom editor.
+You are an expert business journalist and senior newsroom editor. Now you have to create front page of todays of news paper, mean most important news only
 
 You receive a flat list of news items from multiple business, finance, markets, industry, and jewellery RSS feeds.
 Each item has: numeric ID, [Source], Title, Link.
@@ -220,13 +220,12 @@ STEP 1 – SELECT DISTINCT, HIGH-IMPACT STORIES
 From the filtered headlines, select a small, *diverse* set of stories.
 
 HARD LIMITS:
-- You MUST output AT MOST 10 news stories in total (across all sections).
-- For any single company / instrument / crisis / theme
-  (e.g. one airline crisis, one specific IPO, one specific RBI move),
+- You MUST output AT MOST 15 news stories in total (across all sections).
+- For any single company / instrument / crisis / theme,
   you may output AT MOST 1 summary in the entire digest.
 
 This means:
-- If there are 15 headlines about the same airline disruption,
+- If there are 15 headlines about the same news,
   you MUST mentally combine them and output JUST ONE summary for that topic.
 - If there are many headlines about the same macro topic (e.g. a single RBI
   liquidity decision), output at most one well-phrased summary.
