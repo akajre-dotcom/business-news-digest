@@ -169,6 +169,15 @@ def build_headlines_text(items: List[Dict]) -> str:
 # =======================
 
 def ask_ai_for_digest(headlines_text: str) -> str:
+    """
+    Ask OpenAI to:
+    - Read all headlines (titles + sources + links)
+    - Categorise each item into a broad section
+    - Write a short summary for EACH item
+    - Output clean HTML only
+    - Do NOT drop any items
+    """
+
     if "OPENAI_API_KEY" not in os.environ:
         raise RuntimeError("OPENAI_API_KEY environment variable is not set")
 
@@ -183,62 +192,70 @@ Each item has: numeric ID, [Source], Title, Link.
 INPUT ITEMS:
 {headlines_text}
 
----------------- TASK 1 – DEDUP / CLUB STORIES ----------------
-Your job is to:
-- Identify items that clearly refer to the same underlying event
-  (same company and same main action; or same policy decision; or same macro data print).
-- Club them into a single "story group".
-
-Rules:
-- If two headlines are obviously about the same event from different sources, treat them as ONE story.
-- If similar theme but clearly different events (different companies, dates, numbers), keep them separate.
-- Each story group must reference ALL included links (main + additional).
-
----------------- TASK 2 – CATEGORISE EACH STORY ----------------
-Assign each story group to exactly ONE of these categories:
+---------------- TASK 1 – CATEGORISE EACH STORY ----------------
+Assign each item (each ID) to exactly ONE of these categories:
 
 A. 🇮🇳 India – Economy & Markets
+   (RBI, GDP, inflation, fiscal, trade, indices, yields, Nifty, Sensex, macro data)
 B. 🇮🇳 India – Corporate, Sectors, Startups & Deals
+   (company news, results, earnings, funding, IPOs, M&A, sector-specific developments)
 C. 🌏 Global – Markets & Macro
+   (US/Europe/Asia macro, global markets, Fed, ECB, BOJ, global commodities, FX)
 D. 💍 Jewellery, Gold, Gems & Retail
+   (gold prices, jewellery demand, hallmarking, diamond/gem trade, jewellery retailers)
 E. 🧩 Other Business & Consumer Trends
+   (business + tech + consumer trends that don't fit cleanly above)
+
+Every single item MUST go into exactly ONE section.
+Do NOT ignore or drop any item.
+
+---------------- TASK 2 – WRITE SUMMARY FOR EACH ITEM ----------------
+For EACH input item (each ID), create ONE story block with:
+
+- The headline and source
+- A 1–2 sentence summary in simple English
+- The link
+
+Important:
+- Use ONLY information that can be inferred from the title and (if present) the source name.
+- Do NOT invent specific numbers, dates, or facts that are not in the title.
+- If you need to mention context, keep it generic (e.g., "on concerns about demand", "after recent policy changes") and only when reasonable.
 
 ---------------- TASK 3 – OUTPUT FORMAT (HTML ONLY) ----------------
-Output ONLY HTML, structured as:
+For each section you actually use, output:
 
 <h2>SECTION TITLE</h2>
 <div class="section">
   <div class="story">
-    <h3>MAIN HEADLINE (Main Source)</h3>
-    <p><b>Summary:</b> 1–3 sentences in simple English, combining information from the grouped headlines.
-       Only use what can be inferred from the titles and sources. Do NOT invent numbers or details.</p>
-    <ul>
-      <li><b>Main link:</b> <a href="MAIN_LINK" target="_blank">MAIN_LINK</a></li>
-      <li><b>Also covered by:</b></li>
-      <ul>
-        <li>Source XYZ – <a href="LINK_2" target="_blank">LINK_2</a></li>
-        <li>Source ABC – <a href="LINK_3" target="_blank">LINK_3</a></li>
-      </ul>
-    </ul>
+    <h3>HEADLINE (Source)</h3>
+    <p><b>Summary:</b> 1–2 sentences summarising the story in plain English.</p>
+    <p><a href="LINK_FROM_INPUT" target="_blank">Read more →</a></p>
   </div>
+
+  <!-- more <div class="story"> blocks, one per item in this section -->
 </div>
 
-- Omit the inner "Also covered by" list if there are no extra links.
-- Do NOT invent any story or URL; ONLY use the IDs/titles/links given.
-- Do NOT reference the numeric IDs in the final output.
+Rules:
+- There must be exactly ONE <div class="story"> for EVERY input item (each ID).
+- Do NOT merge multiple items into a single story.
+- Do NOT omit or skip any input item.
+- Do NOT include the numeric IDs in the final output.
+- Do NOT output any text outside HTML tags.
+- Do NOT output <html>, <head>, or <body> tags.
 
 Use ONLY information from titles and sources. No external knowledge.
 Output MUST be valid HTML only. No markdown, no explanations.
 """
 
     response = client.responses.create(
-        model="gpt-4.1-mini",
+        model="gpt-4.1-mini",   # cheap, good enough
         input=prompt,
-        max_output_tokens=2500,
+        max_output_tokens=6000, # allow enough space for all items
         temperature=0.2,
     )
 
     return response.output_text.strip()
+
 
 
 # =======================
