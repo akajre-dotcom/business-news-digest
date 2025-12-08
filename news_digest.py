@@ -164,10 +164,21 @@ def build_headlines_text(items: List[Dict]) -> str:
     return text
 
 
-# =======================
-# 4. CALL OPENAI – CLUSTER + CATEGORIZE
-# =======================
+def ask_ai_for_digest(headlines_text: str) -> str:
+    """
+    Calls OpenAI to:
+    - Apply editorial filtering
+    - Create precise story groups (no over-grouping)
+    - Categorise into sections
+    - Output clean, newspaper-quality HTML
+    """
 
+    if "OPENAI_API_KEY" not in os.environ:
+        raise RuntimeError("OPENAI_API_KEY environment variable is not set")
+
+    client = OpenAI()  # reads OPENAI_API_KEY from environment
+
+    prompt = f"""
 You are an expert business journalist and senior newsroom editor.
 
 You receive a flat list of news items from multiple business, finance, markets, industry, and jewellery RSS feeds.
@@ -211,54 +222,54 @@ TASK 1 – CREATE PRECISE STORY GROUPS (STRICT)
 
 Your goal is to identify news items that describe the *same underlying event*.
 
-EDITORIAL GROUPING PRINCIPLES (universal, not tied to any company):
+EDITORIAL GROUPING PRINCIPLES:
 
 1. Group items ONLY when they clearly refer to the SAME SPECIFIC EVENT.
+   Examples:
+   - Same airline disruption reported by multiple media outlets.
+   - Same RBI decision mentioned in multiple headlines.
+   - Same earnings report, funding round, merger announcement, regulation, or macro data release.
 
-2. Treat headlines as SEPARATE when:
-   - They relate to different events even within the same sector.
-   - They mention the same company but deal with different announcements.
-   - They cover different market movements, economic opinions, forecasts, etc.
+2. Keep stories SEPARATE when:
+   - They are different events in the same sector.
+   - They involve the same company but different issues or announcements.
+   - They concern different market movements or economic opinions.
 
-3. When uncertain → KEEP THEM IN SEPARATE GROUPS.
-   Over-merging is worse than under-merging.
+3. When uncertain → KEEP AS SEPARATE GROUPS.
 
 4. HARD RULES:
-   - EVERY input item (every ID) MUST appear in exactly ONE story group.
+   - EVERY remaining item must appear in EXACTLY ONE story group.
    - NO item may appear in more than one group.
-   - NO item may be silently dropped (except those removed in the newsroom filter).
+   - NO item may be omitted (except items excluded by newsroom filtering).
 
-5. BALANCE RULE – AVOID DOMINATION:
-   To maintain a readable, newspaper-quality digest:
-   - Do NOT allow any single event to dominate the briefing.
-   - If a story has more than 6 related items, create:
-       (a) one main story group, and  
-       (b) one overflow group for the remaining related headlines.
-   - Never produce more than TWO groups about the same event.
-   - This rule applies to ALL events, generically.
+5. BALANCE RULE – AVOID DIGEST DOMINATION:
+   - If a story cluster has more than 6 items, split into:
+       (a) a main story group  
+       (b) one overflow group  
+   - Never create more than TWO groups for the same underlying event.
+   - Keep the digest diverse and readable.
 
-6. Maintain overall diversity:
-   Your grouping must ensure the digest covers a range of sectors, markets,
-   corporate activity, policy developments, and global macro themes.
+6. Aim for professional editorial judgment:
+   - Groups should resemble how stories appear on a real business news homepage.
 
 
 ==============================================================
-TASK 2 – ASSIGN STORY GROUPS TO SECTIONS
+TASK 2 – ASSIGN EACH GROUP TO ONE SECTION
 ==============================================================
 
-Each story group must be placed in EXACTLY ONE of these sections:
+Each story group must belong to EXACTLY ONE of:
 
-A. 🇮🇳 India – Economy & Markets
-B. 🇮🇳 India – Corporate, Sectors, Startups & Deals
-C. 🌏 Global – Markets & Macro
-D. 💍 Jewellery, Gold, Gems & Retail
-E. 🧩 Other Business & Consumer Trends
+A. 🇮🇳 India – Economy & Markets  
+B. 🇮🇳 India – Corporate, Sectors, Startups & Deals  
+C. 🌏 Global – Markets & Macro  
+D. 💍 Jewellery, Gold, Gems & Retail  
+E. 🧩 Other Business & Consumer Trends  
 
-Choose the section that best represents the *main focus* of the group.
+Choose the section best matching the *main focus* of the group.
 
 
 ==============================================================
-TASK 3 – OUTPUT FORMAT (STRICT HTML-ONLY)
+TASK 3 – OUTPUT FORMAT (STRICT HTML ONLY)
 ==============================================================
 
 For each section you use, output:
@@ -272,11 +283,11 @@ For each section you use, output:
     </h3>
 
     <p><b>Summary:</b>
-       1–3 crisp sentences in clean, neutral English, combining ONLY the facts
-       implied by the grouped titles. Do NOT invent details not present in the input.
+       1–3 sentences in clean, neutral English. Summarise ONLY what can be inferred
+       from the grouped titles. Do NOT invent details or dates.
     </p>
 
-    <!-- Include this ONLY if the group has multiple items -->
+    <!-- Include this ONLY if group has multiple items -->
     <ul>
       <li><b>Also covered by:</b></li>
       <ul>
@@ -286,27 +297,36 @@ For each section you use, output:
     </ul>
   </div>
 
-  <!-- More <div class="story"> blocks, one per story group -->
-
 </div>
 
-RULES FOR MAIN HEADLINE SELECTION:
-- Pick the clearest headline that best describes the event.
-- Use its link as MAIN_LINK.
-- All other group items go under “Also covered by”.
+RULES FOR MAIN HEADLINE:
+- Choose the clearest headline that represents the event.
+- Use its link as the MAIN_LINK.
+- All others go under “Also covered by”.
 
 ==============================================================
-ADDITIONAL HARD CONSTRAINTS
+NON-NEGOTIABLE OUTPUT RULES
 ==============================================================
 
-- Do NOT use numeric IDs in the final output.
-- Do NOT invent URLs, facts, or details.
-- Do NOT output anything outside the required HTML.
-- Do NOT include <html>, <head>, or <body>.
-- The output must be valid HTML only.
-- Use ONLY the text provided. No external knowledge.
+- Use ONLY information from input titles.
+- NO numeric IDs in final HTML.
+- NO invented URLs or facts.
+- NO text outside HTML.
+- NO <html>, <head> or <body> tags.
+- Output must be pure HTML.
 
 End of instructions.
+"""
+
+    response = client.responses.create(
+        model="gpt-4.1",
+        input=prompt,
+        max_output_tokens=6500,
+        temperature=0.2,
+    )
+
+    return response.output_text.strip()
+
 
 
 # =======================
