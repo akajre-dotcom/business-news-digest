@@ -156,13 +156,12 @@ def build_headlines_text(items: List[Dict]) -> str:
         lines.append("")
 
     text = "\n".join(lines)
-
-    # ❌ REMOVE this truncation – it was cutting off later feeds
-    # if len(text) > 15000:
-    #     text = text[:15000]
-
     return text
 
+
+# =======================
+# 4. CALL OPENAI – CLUSTER, SUMMARISE, ADD GROWTH SECTIONS
+# =======================
 
 def ask_ai_for_digest(headlines_text: str) -> str:
     """
@@ -170,7 +169,7 @@ def ask_ai_for_digest(headlines_text: str) -> str:
     - Apply editorial filtering
     - Create precise story groups (no over-grouping)
     - Categorise into sections
-    - Output clean, newspaper-quality HTML
+    - Output summary-only, clickable HTML
     - Append 4 personal-growth sections
     """
 
@@ -197,20 +196,22 @@ Filter the headlines STRICTLY — keep only REAL business/economic/corporate/
 regulatory/markets/macroeconomic stories.
 
 EXCLUDE completely:
-- Celebrity / OTT / entertainment
-- Crime/court drama unless business-impacting
-- Viral videos, outrage, memes
-- Lifestyle, travel, festivals, weather
-- Politics with no business impact
-- Local accidents or general news with no corporate effect
+- Celebrity / OTT / entertainment / gossip items.
+- Crime/court drama unless they clearly affect a company, sector, or market.
+- Viral videos, outrage, memes, human-interest odd stories.
+- Lifestyle, travel, festivals, weather.
+- Politics with no measurable business or policy impact.
+- Local accidents or general news with no corporate or economic effect.
 
 KEEP ONLY IF the story clearly affects:
-- Companies, sectors, corporate governance
-- Stocks, bonds, commodities, currencies, crypto
-- RBI + regulatory decisions
-- Macro indicators, trade, inflation, GDP
-- Startups, funding, IPOs, acquisitions
-- Gold, jewellery, gems retail trends
+- Companies, sectors, corporate governance, earnings or strategy.
+- Stocks, bonds, commodities, currencies, crypto.
+- RBI / central bank actions, regulation, taxation, policy changes.
+- Macro indicators, trade, inflation, GDP, fiscal issues.
+- Startups, funding, IPOs, acquisitions, PE/VC deals.
+- Gold, jewellery, gems / diamond retail with commercial impact.
+
+If relevance is not obvious → EXCLUDE.
 
 
 ==============================================================
@@ -220,20 +221,24 @@ TASK 1 – CREATE PRECISE STORY GROUPS (STRICT)
 Group headlines ONLY if they refer to the SAME SPECIFIC EVENT.
 
 Rules:
-1. Same company ≠ same event. Group ONLY if it's the same announcement/issue.
+1. Same company ≠ same event. Group ONLY if it is the same announcement/issue.
 2. Same sector ≠ same event.
-3. Similar themes ≠ same event.
-4. When unsure → KEEP SEPARATE.
+3. Similar theme ≠ same event.
+4. When unsure → KEEP AS SEPARATE GROUPS.
 
 Hard rules:
 - Every remaining item must appear in EXACTLY ONE story group.
-- No item may appear twice.
-- No item may be silently omitted.
+- No item may appear in more than one group.
 
-BALANCE RULE:
-- If a cluster has more than 3 items, omitted remaining:
-- Never exceed 1 groups per event.
-- Ensure digest diversity.
+BALANCE RULE – LIMIT PER EVENT:
+- If a story cluster has more than 3 items, include at most 3 representative items
+  (1 main + up to 2 "also covered by") and IGNORE the rest of that cluster.
+- Never create more than ONE group per underlying event.
+- Aim for a diverse, readable digest rather than repeating the same story many times.
+
+OVERALL LENGTH:
+- After grouping, include at most 30 story groups in total.
+- If there are more groups, keep the most important by business/market impact.
 
 
 ==============================================================
@@ -250,36 +255,56 @@ E. 📈 Stock Market – Shares, Prices, Analysis
 
 
 ==============================================================
-TASK 3 – OUTPUT FORMAT (STRICT HTML ONLY)
+TASK 3 – OUTPUT FORMAT (STRICT HTML ONLY, SUMMARY-ONLY)
 ==============================================================
 
-For each section:
+For each section you actually use, output:
 
 <h2>SECTION TITLE</h2>
 <div class="section">
 
   <div class="story">
-    <h3><a href="MAIN_LINK" target="_blank">MAIN HEADLINE (Source)</a></h3>
+    <p>
+      <a href="MAIN_LINK" target="_blank">
+        <b>Summary:</b>
+        ONE short sentence explaining what happened and why it matters,
+        written in simple English.
+      </a>
+      <span> (Source: MAIN_SOURCE)</span>
+    </p>
 
-    <p><b>Summary:</b> 1–3 sentences, clean, neutral English.
-       Summaries MUST use ONLY what is inferable from titles. No invented facts.</p>
-
-    <!-- MULTIPLE ITEMS ONLY -->
+    <!-- Include this ONLY if group has multiple items -->
     <ul>
       <li><b>Also covered by:</b></li>
       <ul>
-        <li>Source – <a href="LINK_2" target="_blank">LINK_2</a></li>
+        <li>SOURCE_2 – <a href="LINK_2" target="_blank">LINK_2</a></li>
+        <!-- more items if needed, up to 2 extra links total -->
       </ul>
     </ul>
-
   </div>
 
 </div>
+
+SUMMARY RULES:
+- DO NOT repeat or closely paraphrase the headline.
+- The summary MUST add value: mention what changed and who/what is affected.
+- Use ONLY what can be inferred from the titles (no invented figures, dates, or quotes).
+- Keep it to one sentence (ideally under 30 words).
+
+
+RULES FOR MAIN LINK:
+- Choose the clearest, most representative headline as MAIN_HEADLINE.
+- Use its URL as MAIN_LINK.
+- All other items in the group go under “Also covered by”.
 
 
 ==============================================================
 AFTER ALL NEWS SECTIONS — ADD THESE FOUR VALUE-ADD SECTIONS
 ==============================================================
+
+After you finish ALL news sections, you MUST append EXACTLY these four sections,
+in this order, even if there were very few or no valid news items.
+These sections must ALWAYS be present.
 
 1️⃣ 💡 Monetizable Idea of the Day
 ---------------------------------
@@ -296,7 +321,6 @@ AFTER ALL NEWS SECTIONS — ADD THESE FOUR VALUE-ADD SECTIONS
   </div>
 </div>
 
-
 2️⃣ 🗣 Communication Upgrade of the Day
 --------------------------------------
 <h2>🗣 Communication Upgrade of the Day</h2>
@@ -304,13 +328,12 @@ AFTER ALL NEWS SECTIONS — ADD THESE FOUR VALUE-ADD SECTIONS
   <div class="story">
     <h3>SKILL NAME</h3>
     <ul>
-      <li><b>What it is:</b> simple definition.</li>
-      <li><b>Why it works:</b> psychological/business reason.</li>
-      <li><b>How to apply:</b> 2–3 practical steps users can use today.</li>
+      <li><b>What it is:</b> simple, clear definition.</li>
+      <li><b>Why it works:</b> psychological or business reason.</li>
+      <li><b>How to apply:</b> 2–3 practical steps the reader can use today.</li>
     </ul>
   </div>
 </div>
-
 
 3️⃣ 🚀 Career Upgrade of the Day
 --------------------------------
@@ -320,12 +343,11 @@ AFTER ALL NEWS SECTIONS — ADD THESE FOUR VALUE-ADD SECTIONS
     <h3>CAREER SKILL</h3>
     <ul>
       <li><b>What it is:</b> one-sentence definition.</li>
-      <li><b>Why it matters:</b> how it improves leadership, promotions, or workplace impact.</li>
+      <li><b>Why it matters:</b> how it helps in promotions, leadership, or workplace impact.</li>
       <li><b>How to apply:</b> 2–3 practical steps.</li>
     </ul>
   </div>
 </div>
-
 
 4️⃣ 🧠 Business Mental Model of the Day
 --------------------------------------
@@ -346,12 +368,12 @@ AFTER ALL NEWS SECTIONS — ADD THESE FOUR VALUE-ADD SECTIONS
 NON-NEGOTIABLE OUTPUT RULES
 ==============================================================
 
-- Use ONLY information from the input titles.
-- NO numeric IDs.
-- NO invented facts or URLs.
+- Use ONLY information from the input titles for news summaries.
+- Do NOT invent URLs.
+- Do NOT output numeric IDs.
 - Output must be PURE HTML.
-- No markdown.
-- No <html>, <head>, <body> tags.
+- Do NOT output <html>, <head> or <body> tags.
+- The four value-add sections at the end are MANDATORY.
 
 End of instructions.
 """
@@ -359,13 +381,11 @@ End of instructions.
     response = client.responses.create(
         model="gpt-4.1",
         input=prompt,
-        max_output_tokens=7000,
+        max_output_tokens=4000,
         temperature=0.2,
     )
 
     return response.output_text.strip()
-
-
 
 
 # =======================
