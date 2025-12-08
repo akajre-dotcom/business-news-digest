@@ -1,24 +1,24 @@
 import os
-import smtplib
 import ssl
+import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 
+from typing import List, Dict, Optional
+
+import requests
 import feedparser
+from bs4 import BeautifulSoup
 import pytz
 from openai import OpenAI
 
 
 # =======================
-# 1. RSS SOURCES
+# 1. CONFIG
 # =======================
 
-# Curated India-heavy + some global context (native RSS where possible)
-# =======================
-# 1. RSS SOURCES
-# =======================
-
+# RSS sources (same as both scripts)
 RSS_FEEDS = [
     # --- Livemint (updated official RSS, no 'RSS' suffix) ---
     "https://www.livemint.com/rss/news",
@@ -52,55 +52,150 @@ RSS_FEEDS = [
     "https://news.google.com/rss/search?q=site:moneycontrol.com+markets&hl=en-IN&gl=IN&ceid=IN:en",
 ]
 
-
-
-# Keep this moderate so we don't blow context
-MAX_ITEMS = 70   # total items across all feeds
+# Scraper / network settings (from working script)
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (compatible; RSSNewsScraper/1.0; +https://example.com/bot)"
+}
+REQUEST_TIMEOUT = 15     # seconds
+MAX_ITEMS_PER_FEED = 20  # how many articles per RSS feed to consider
+MAX_ITEMS = 100           # global cap for newsletter (after de-dup + scraping)
 
 
 # =======================
-# 2. FETCH NEWS
+# 2. SCRAPING UTILITIES
 # =======================
 
-def fetch_news():
-    """Fetch recent headlines + summaries from all RSS feeds."""
-    items = []
-    PER_FEED_LIMIT = 6  # max items per feed
+def fetch_html(url: str) -> Optional[str]:
+    """Download raw HTML of a page."""
+    try:
+        resp = requests.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
+        resp.raise_for_status()
+        return resp.text
+    except requests.RequestException as e:
+        print(f"[ERROR] Failed to fetch page {url}: {e}")
+        return None
 
-    for url in RSS_FEEDS:
-        feed = feedparser.parse(url)
-        source_name = feed.feed.get("title", "Unknown Source")
 
-        for entry in feed.entries[:PER_FEED_LIMIT]:
-            title = entry.get("title", "").strip()
-            summary = entry.get("summary", "").strip()
-            link = entry.get("link", "").strip()
-            if not title or not link:
+def extract_main_text(html: str) -> str:
+    """
+    Simple text extractor:
+    - Remove scripts/styles
+    - Join all <p> tags
+    """
+    soup = BeautifulSoup(html, "html.parser")
+
+    for tag in soup(["script", "style", "noscript"]):
+        tag.decompose()
+
+    paragraphs = [p.get_text(" ", strip=True) for p in soup.find_all("p")]
+    text = "\n".join(p for p in paragraphs if p)
+    return text
+
+
+def fetch_rss_items(feed_url: str, max_items: int = MAX_ITEMS_PER_FEED) -> List[Dict]:
+    """
+    Read items from an RSS feed and return list of dicts:
+    {feed_url, feed_title, title, link, published, rss_summary}
+    """
+    print(f"[INFO] Reading RSS: {feed_url}")
+    feed = feedparser.parse(feed_url)
+
+    feed_title = feed.feed.get("title", feed_url)
+
+    items: List[Dict] = []
+    for entry in feed.entries[:max_items]:
+        link = entry.get("link")
+        if not link:
+            continue
+
+        item = {
+            "feed_url": feed_url,
+            "feed_title": feed_title,
+            "title": entry.get("title", "").strip(),
+            "link": link,
+            "published": entry.get("published", "") or entry.get("updated", ""),
+            "rss_summary": entry.get("summary", "").strip(),
+        }
+        items.append(item)
+
+    print(f"[INFO] Found {len(items)} items in RSS feed: {feed_title}")
+    return items
+
+
+def collect_all_rss_articles(rss_feeds: List[str]) -> List[Dict]:
+    """Collect all unique article links from all RSS feeds."""
+    all_items: List[Dict] = []
+    seen_links = set()
+
+    for feed_url in rss_feeds:
+        feed_items = fetch_rss_items(feed_url)
+        for item in feed_items:
+            link = item["link"]
+            if link in seen_links:
                 continue
+            seen_links.add(link)
+            all_items.append(item)
 
-            # Truncate very long summaries so model can still read "inside"
-            if len(summary) > 350:
-                summary = summary[:350] + "..."
-
-            items.append(
-                {
-                    "source": source_name,
-                    "title": title,
-                    "summary": summary,
-                    "link": link,
-                }
-            )
-
-    # Global cap so we don't blow up context
-    MAX_ITEMS = 80
-    return items[:MAX_ITEMS]
+    print(f"\n[INFO] Total unique articles collected from RSS: {len(all_items)}")
+    return all_items
 
 
+# =======================
+# 3. BUILD INPUT FOR DIGEST MODEL
+# =======================
 
-def build_headlines_text(items):
+def fetch_news() -> List[Dict]:
+    """
+    Collect unique articles, scrape them, and return a list of simplified items:
+    {source, title, summary, link}
+
+    These items are what we feed into the digest LLM (via build_headlines_text).
+    """
+    articles = collect_all_rss_articles(RSS_FEEDS)
+
+    items: List[Dict] = []
+    for article in articles:
+        if len(items) >= MAX_ITEMS:
+            break
+
+        url = article["link"]
+        feed_title = article["feed_title"] or "Unknown Source"
+        title = article["title"] or "(No title)"
+
+        html = fetch_html(url)
+        if html:
+            text = extract_main_text(html).strip()
+        else:
+            # Fallback to RSS summary if page fetch fails
+            text = article["rss_summary"]
+
+        # If still empty, skip
+        if not text:
+            continue
+
+        # Truncate for context safety
+        if len(text) > 600:
+            text_snippet = text[:600] + "..."
+        else:
+            text_snippet = text
+
+        items.append(
+            {
+                "source": feed_title,
+                "title": title,
+                "summary": text_snippet,
+                "link": url,
+            }
+        )
+
+    print(f"[INFO] Prepared {len(items)} items for digest model (after scraping)")
+    return items
+
+
+def build_headlines_text(items: List[Dict]) -> str:
     """
     Turn news items into a text block for the AI.
-    We include source, title, summary, link.
+    We include source, title, scraped summary snippet, link.
     """
     lines = []
     for i, item in enumerate(items, start=1):
@@ -122,22 +217,23 @@ def build_headlines_text(items):
     return text
 
 
-
 # =======================
-# 3. CALL OPENAI – DIGEST GENERATION
+# 4. CALL OPENAI – DIGEST GENERATION
 # =======================
 
 def ask_ai_for_digest(headlines_text: str) -> str:
     """
     Ask OpenAI to:
-    - read headlines + summaries
+    - read headlines + scraped summaries
     - pick & club important business/economy/markets/jewellery stories
     - group into sections
     - output clean HTML only
     """
 
-    api_key = os.environ["OPENAI_API_KEY"]
-    client = OpenAI(api_key=api_key)
+    if "OPENAI_API_KEY" not in os.environ:
+        raise RuntimeError("OPENAI_API_KEY environment variable is not set")
+
+    client = OpenAI()  # reads OPENAI_API_KEY from env
 
     prompt = """
 You are an expert financial and business journalist writing for an Indian
@@ -251,30 +347,23 @@ After all news sections, append these two sections (also HTML):
 </div>
 
 Output ONLY valid HTML as described. No markdown, no commentary.
-"""
-
-    prompt = prompt.format(headlines_text=headlines_text)
-
-    response = client.responses.create(
-        model="gpt-4.1",  # if you can, upgrade this to "gpt-4.1" for even better quality
-        input=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "input_text",
-                        "text": prompt,
-                    }
-                ],
-            }
-        ],
+""".format(
+        headlines_text=headlines_text
     )
 
-    return response.output_text
+    response = client.responses.create(
+        model="gpt-4.1",           # or "gpt-4.1-mini" if you want cheaper
+        input=prompt,
+        max_output_tokens=5000,    # keep large enough for full HTML
+        temperature=0.3,
+    )
+
+    # Same style as your working script
+    return response.output_text.strip()
 
 
 # =======================
-# 4. SEND NICE HTML EMAIL
+# 5. SEND NICE HTML EMAIL
 # =======================
 
 def send_email(subject: str, digest_html: str):
@@ -336,7 +425,7 @@ def send_email(subject: str, digest_html: str):
 
 
 # =======================
-# 5. MAIN
+# 6. MAIN
 # =======================
 
 def main():
