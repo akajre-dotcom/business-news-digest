@@ -289,65 +289,126 @@ SUMMARY RULES:
 
 
 ==============================================================
-STEP 4 – APPEND FOUR PERSONAL-GROWTH SECTIONS
+AFTER ALL NEWS SECTIONS — ADD THESE SEVEN DAILY VALUE-UPGRADES
 ==============================================================
 
-After ALL news sections (A–E), ALWAYS append these four sections
-in this exact order, even if there were very few news items.
+Use minimum words. Explanations must follow first-principles thinking:
+- Define the core idea.
+- Explain why it works.
+- Give 2–3 extremely practical application steps.
+- No fluff, no quotes, no stories unless they add clear value.
 
-1️⃣ 💡 Monetizable Idea of the Day
----------------------------------
-<h2>💡 Monetizable Idea of the Day</h2>
-<div class="section">
-  <div class="story">
-    <h3>IDEA TITLE</h3>
-    <ul>
-      <li><b>What it is:</b> one-sentence explanation.</li>
-      <li><b>Why this opportunity exists now:</b> one sentence tied to current business or tech trends.</li>
-      <li><b>How to execute:</b> 3–4 simple, realistic steps.</li>
-      <li><b>Example:</b> a practical illustration of someone doing something similar.</li>
-    </ul>
-  </div>
-</div>
+Very important:
+- You do NOT have live data.
+- For all sections below, choose examples that are timeless / generally true.
+- Do NOT mention “yesterday”, dates, or specific recent events.
+- If you mention a CEO, company, or book, choose well-known, high-signal ones.
 
-2️⃣ 🗣 Communication Upgrade of the Day
+1️⃣ 🗣 Communication Upgrade of the Day
 --------------------------------------
 <h2>🗣 Communication Upgrade of the Day</h2>
 <div class="section">
   <div class="story">
     <h3>SKILL NAME</h3>
     <ul>
-      <li><b>What it is:</b> simple, clear definition.</li>
-      <li><b>Why it works:</b> psychological or business reason.</li>
-      <li><b>How to apply:</b> 2–3 practical steps the reader can use today.</li>
+      <li><b>What it is:</b> Short, first-principles definition.</li>
+      <li><b>Why it works:</b> One sentence explaining the underlying psychological or logical mechanism.</li>
+      <li><b>How to apply:</b> 2–3 direct, real-world steps anyone can use today.</li>
     </ul>
   </div>
 </div>
 
-3️⃣ 🚀 Career Upgrade of the Day
---------------------------------
-<h2>🚀 Career Upgrade of the Day</h2>
-<div class="section">
-  <div class="story">
-    <h3>CAREER SKILL</h3>
-    <ul>
-      <li><b>What it is:</b> one-sentence definition.</li>
-      <li><b>Why it matters:</b> how it helps in promotions, leadership, or impact.</li>
-      <li><b>How to apply:</b> 2–3 concrete actions.</li>
-    </ul>
-  </div>
-</div>
-
-4️⃣ 🧠 Business Mental Model of the Day
---------------------------------------
-<h2>🧠 Business Mental Model of the Day</h2>
+2️⃣ 🧠 Mental Model of the Day
+------------------------------
+<h2>🧠 Mental Model of the Day</h2>
 <div class="section">
   <div class="story">
     <h3>MENTAL MODEL NAME</h3>
     <ul>
-      <li><b>What it is:</b> simple explanation.</li>
-      <li><b>Why it helps:</b> how it improves decisions in business or investing.</li>
-      <li><b>How to use it:</b> 2–3 actionable examples or steps.</li>
+      <li><b>Core principle:</b> One-line explanation of the idea from first principles.</li>
+      <li><b>Why it matters:</b> One sentence on how it improves decision-making.</li>
+      <li><b>How to use:</b> 2–3 short, practical steps or scenarios.</li>
+    </ul>
+  </div>
+</div>
+
+3️⃣ 🧩 Cognitive Bias of the Day
+-------------------------------
+<h2>🧩 Cognitive Bias of the Day</h2>
+<div class="section">
+  <div class="story">
+    <h3>BIAS NAME</h3>
+    <ul>
+      <li><b>What it is:</b> One-sentence definition.</li>
+      <li><b>Why it happens:</b> First-principles explanation of the brain mechanism behind the bias.</li>
+      <li><b>How to counter it:</b> 2–3 actionable, simple steps.</li>
+    </ul>
+  </div>
+</div>
+
+4️⃣ 📘 1-Page Book Summary of the Day
+-------------------------------------
+<h2>📘 1-Page Book Summary of the Day</h2>
+<div class="section">
+  <div class="story">
+    <h3>BOOK TITLE (Author)</h3>
+    <ul>
+      <li><b>Core idea:</b> One powerful sentence summarising the book’s main argument.</li>
+      <li><b>Key principles:</b> 3–4 bullets, each expressing a first-principles insight.</li>
+      <li><b>How to apply:</b> 2–3 practical actions based on the book’s ideas.</li>
+    </ul>
+  </div>
+</div>
+
+Rules for choosing the book:
+- Choose a widely known, high-impact non-fiction book in business, investing,
+  decision-making, psychology, or careers (e.g., no obscure or niche titles).
+- Do NOT claim the book was released “recently” or “yesterday”.
+
+5️⃣ 🏢 What Top CEOs Are Saying
+-------------------------------
+<h2>🏢 What Top CEOs Are Saying</h2>
+<div class="section">
+  <div class="story">
+    <h3>COMPANY / CEO</h3>
+    <ul>
+      <li><b>Main message:</b> One-line summary of a typical strategic or cultural message this CEO is known for.</li>
+      <li><b>Reasoning:</b> One sentence on the underlying principle or strategy behind that message.</li>
+      <li><b>Implication:</b> One sentence on what it means for employees, investors, or customers.</li>
+    </ul>
+  </div>
+</div>
+
+Rules for this section:
+- Pick a well-known CEO of a major global or Indian company.
+- Use a timeless, representative message (e.g., focus on customers, long-term thinking),
+  not a “yesterday” quote.
+- Do NOT mention dates, “yesterday”, or specific quarterly calls.
+
+6️⃣ 🎯 Decision-Making Model of the Day
+---------------------------------------
+<h2>🎯 Decision-Making Model of the Day</h2>
+<div class="section">
+  <div class="story">
+    <h3>MODEL NAME</h3>
+    <ul>
+      <li><b>Principle:</b> One-line first-principles definition.</li>
+      <li><b>Why it works:</b> One sentence explaining the mechanism.</li>
+      <li><b>How to use:</b> 2–3 simple steps.</li>
+    </ul>
+  </div>
+</div>
+
+7️⃣ 🤝 Negotiation Model of the Day
+-----------------------------------
+<h2>🤝 Negotiation Model of the Day</h2>
+<div class="section">
+  <div class="story">
+    <h3>MODEL NAME</h3>
+    <ul>
+      <li><b>What it is:</b> Short definition focusing on incentives and first principles.</li>
+      <li><b>Why it works:</b> One sentence explaining the psychology or logic behind it.</li>
+      <li><b>How to apply:</b> 2–3 methods usable in real workplace or business negotiations.</li>
     </ul>
   </div>
 </div>
