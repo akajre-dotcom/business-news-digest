@@ -57,7 +57,7 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; RSSNewsScraper/1.0; +https://example.com/bot)"
 }
 REQUEST_TIMEOUT = 15     # seconds
-MAX_ITEMS_PER_FEED = 20  # how many articles per RSS feed to consider
+MAX_ITEMS_PER_FEED = 8  # how many articles per RSS feed to consider
 MAX_ITEMS = 100           # global cap for newsletter (after de-dup + scraping)
 
 
