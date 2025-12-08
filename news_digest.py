@@ -62,30 +62,32 @@ def is_recent(entry) -> bool:
     now = datetime.now(IST)
 
     dt = None
-
     if hasattr(entry, "published_parsed") and entry.published_parsed:
         dt = datetime.fromtimestamp(time.mktime(entry.published_parsed), IST)
     elif hasattr(entry, "updated_parsed") and entry.updated_parsed:
         dt = datetime.fromtimestamp(time.mktime(entry.updated_parsed), IST)
 
     if dt is None:
-        # No date info → skip, to keep "last 24h" strict
+        # No reliable date → treat as not-recent for the first pass
         return False
 
     return (now - dt) <= timedelta(hours=24)
 
 
 # =======================
-# 3. FETCH HEADLINES (LAST 24H, UNIQUE BY LINK)
+# 3. FETCH HEADLINES (LAST 24H + FALLBACK, UNIQUE BY LINK)
 # =======================
 
 def fetch_news() -> List[Dict]:
     """
     Returns flat list of items:
       {id, source, title, link}
-    Only includes:
-      - last 24 hours (IST)
-      - unique links across all feeds
+
+    Logic:
+      - For each feed:
+        - Try to pick only items from last 24 hours.
+        - If none found, fallback to latest items (no time filter).
+      - Deduplicate by link across all feeds.
     """
     items: List[Dict] = []
     seen_links = set()
@@ -96,12 +98,21 @@ def fetch_news() -> List[Dict]:
         feed = feedparser.parse(feed_url)
 
         feed_title = feed.feed.get("title", feed_url)
+        entries = feed.entries[:MAX_ITEMS_PER_FEED]
 
-        count_recent = 0
-        for entry in feed.entries[:MAX_ITEMS_PER_FEED]:
-            if not is_recent(entry):
-                continue
+        # First pass: only recent items
+        recent_entries = [e for e in entries if is_recent(e)]
 
+        # If no recent items, fallback to latest entries regardless of time
+        if recent_entries:
+            used_entries = recent_entries
+            print(f"[INFO] Using {len(recent_entries)} recent items from: {feed_title}")
+        else:
+            used_entries = entries
+            print(f"[INFO] No recent items (24h) from {feed_title}, using latest {len(entries)} instead.")
+
+        count_added_from_feed = 0
+        for entry in used_entries:
             title = (entry.get("title") or "").strip()
             link = (entry.get("link") or "").strip()
             if not title or not link:
@@ -121,11 +132,11 @@ def fetch_news() -> List[Dict]:
                 }
             )
             idx += 1
-            count_recent += 1
+            count_added_from_feed += 1
 
-        print(f"[INFO] {count_recent} recent unique headlines from: {feed_title}")
+        print(f"[INFO] Added {count_added_from_feed} unique items from: {feed_title}")
 
-    print(f"[INFO] Total unique recent headlines collected: {len(items)}")
+    print(f"[INFO] Total unique headlines collected (recent + fallback): {len(items)}")
     return items
 
 
@@ -277,7 +288,7 @@ def send_email(subject: str, digest_html: str):
           <div style="background:#ffffff; border-radius:12px; padding:20px 26px; box-shadow:0 2px 10px rgba(0,0,0,0.08);">
             
             <h1 style="margin:0 0 4px 0; font-size:22px; color:#111;">
-              📊 Business News Digest – Clustered Headlines (Last 24 Hours)
+              📊 Business News Digest – Clustered Headlines
             </h1>
             <p style="margin:0; color:#777; font-size:12px;">
               Generated automatically on <b>{now_ist}</b> · Similar stories clubbed · Categorised by theme
@@ -323,13 +334,13 @@ def main():
     news_items = fetch_news()
 
     if not news_items:
-        digest_html = "<p>No recent headlines found in the last 24 hours.</p>"
+        digest_html = "<p>No headlines found from RSS feeds.</p>"
     else:
         headlines_text = build_headlines_text(news_items)
         digest_html = ask_ai_for_digest(headlines_text)
 
     now_ist = datetime.now(IST).strftime("%Y-%m-%d %I:%M %p IST")
-    subject = f"Business News Digest – Last 24 Hours – {now_ist}"
+    subject = f"Business News Digest – {now_ist}"
 
     send_email(subject, digest_html)
 
