@@ -463,10 +463,9 @@ def send_email(subject: str, digest_html: str):
           <div style="background:#ffffff; border-radius:12px; padding:20px 26px; box-shadow:0 2px 10px rgba(0,0,0,0.08);">
             
             <h1 style="margin:0 0 4px 0; font-size:22px; color:#111;">
-              📊 Business News Digest – Clustered Headlines
+              📊 7 Daily Value Upgrade & Business News Digests
             </h1>
             <p style="margin:0; color:#777; font-size:12px;">
-              Generated automatically on <b>{now_ist}</b> · Similar stories clubbed · Categorised by theme
             </p>
 
             <hr style="margin:16px 0; border:none; border-top:1px solid #eee;">
@@ -478,7 +477,6 @@ def send_email(subject: str, digest_html: str):
             <hr style="margin:20px 0; border:none; border-top:1px solid #eee;">
 
             <p style="font-size:11px; color:#999; margin:0;">
-              🤖 This digest is auto-generated from multiple business news RSS feeds using AI.
               Stories are grouped when multiple sources cover the same event.
             </p>
           </div>
