@@ -183,7 +183,7 @@ def ask_ai_for_digest(headlines_text: str) -> str:
     client = OpenAI()  # reads OPENAI_API_KEY from env
 
     prompt = f"""
-You are an expert financial and business journalist for an Indian audience.
+You are an expert financial and business journalist for an audience.
 
 You receive a flat list of news items from multiple business/markets/jewellery RSS feeds.
 Each item has: numeric ID, [Source], Title, Link.
@@ -192,30 +192,47 @@ INPUT ITEMS:
 {headlines_text}
 
 ---------------- TASK 1 – CREATE STORY GROUPS (STRICTLY) ----------------
-Create "story groups" where EACH group represents ONE specific underlying event.
+You are acting as a senior news editor responsible for organising headlines into
+clean, publication-ready story groups.
 
-STRICT grouping rules:
-- Items MUST be in the same group ONLY if they clearly describe the SAME event.
-  Examples:
-  - Same company and same main action (e.g., IndiGo flight cancellations in multiple headlines).
-  - Same specific policy decision (e.g., RBI injecting Rs 2 lakh crore liquidity).
-  - Same specific macro data print (e.g., one particular GDP print or inflation release).
-- DO NOT group items just because:
-  - They are all about "markets", "Nifty", or "economy" in general.
-  - They are all about "RBI" but refer to clearly different actions or timeframes.
-  - They are all about "gold prices" but on different days or different angles.
+Your goal is to identify which headlines refer to the **same underlying news event**.
 
-Important:
-- If two headlines are related to different aspects of a broad theme, but not the exact same event,
-  they MUST go into separate story groups.
-- It is better to have MORE groups than to incorrectly merge unrelated stories.
+EDITORIAL GROUPING RULES (STRICT):
 
-VERY IMPORTANT HARD RULE:
-- You MUST assign EVERY input item (each ID) to EXACTLY ONE story group.
-- NO item may be ignored or omitted.
-- NO item may appear in more than one group.
-- Some groups will have just 1 item (that's fine).
-- Some groups will have many items (same event covered by multiple sources).
+1. Group items ONLY when they clearly describe the *exact same event*.
+   Examples of valid grouping:
+   - Multiple outlets reporting on the same IndiGo operational disruption.
+   - Multiple headlines about the SAME RBI decision or liquidity action.
+   - Different sources covering the SAME corporate announcement, earnings release,
+     funding round, merger, regulation, or geopolitical incident.
+
+2. Treat stories as SEPARATE when they are:
+   - About different events within the same broad theme (e.g., general market moves,
+     different RBI viewpoints, unrelated gold price changes).
+   - About the same company but referring to different actions, dates, or issues.
+   - About similar macro/economic topics but not about the same specific event.
+
+3. When in doubt, DO NOT merge.
+   It is always safer to keep two items in different groups than to incorrectly
+   combine unrelated events.
+
+4. Precision matters:
+   - Two headlines are “related” only if a reader would reasonably expect them to
+     appear under the same story on a news homepage.
+   - Do not group items merely because they mention similar sectors, topics, or actors.
+
+HARD NON-NEGOTIABLE RULES:
+
+- EVERY input item (every ID) must appear in EXACTLY ONE story group.
+- Do NOT omit, discard, or merge away any item.
+- An item may NEVER appear in more than one group.
+- Groups may contain:
+  - 1 item (unique story)
+  - Many items (same event covered by multiple sources)
+
+Think like a professional editor producing a clean, organised briefing.
+Your groupings must remain fact-based, conservative, and highly precise.
+
 
 ---------------- TASK 2 – CATEGORISE EACH GROUP ----------------
 Assign each story group to exactly ONE of these sections:
