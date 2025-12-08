@@ -273,7 +273,7 @@ Very important:
 - Do NOT mention dates or “yesterday”.
 - If you mention a CEO, company, or book, choose well-known, high-signal ones.
 
-1️⃣ 🗣 Communication Upgrade of the Day
+
 --------------------------------------
 <h2>🗣 Communication Upgrade of the Day</h2>
 <div class="section">
@@ -287,7 +287,7 @@ Very important:
   </div>
 </div>
 
-2️⃣ 🧠 Mental Model of the Day
+
 ------------------------------
 <h2>🧠 Mental Model of the Day</h2>
 <div class="section">
@@ -301,7 +301,7 @@ Very important:
   </div>
 </div>
 
-3️⃣ 🧩 Cognitive Bias of the Day
+
 -------------------------------
 <h2>🧩 Cognitive Bias of the Day</h2>
 <div class="section">
@@ -315,7 +315,7 @@ Very important:
   </div>
 </div>
 
-4️⃣ 📘 1-Page Book Summary of the Day
+
 -------------------------------------
 <h2>📘 1-Page Book Summary of the Day</h2>
 <div class="section">
@@ -334,7 +334,7 @@ Rules for choosing the book:
   in business, investing, decision-making, psychology, or careers.
 - Do NOT claim the book was released “recently” or “yesterday”.
 
-5️⃣ 🏢 What Top CEOs Are Saying
+
 -------------------------------
 <h2>🏢 What Top CEOs Are Saying</h2>
 <div class="section">
@@ -354,7 +354,7 @@ Rules:
   not a “yesterday” quote.
 - Do NOT mention dates.
 
-6️⃣ 🎯 Decision-Making Model of the Day
+
 ---------------------------------------
 <h2>🎯 Decision-Making Model of the Day</h2>
 <div class="section">
@@ -368,7 +368,7 @@ Rules:
   </div>
 </div>
 
-7️⃣ 🤝 Negotiation Model of the Day
+
 -----------------------------------
 <h2>🤝 Negotiation Model of the Day</h2>
 <div class="section">
