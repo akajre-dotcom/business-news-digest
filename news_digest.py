@@ -372,7 +372,7 @@ End of instructions.
     response = client.responses.create(
         model="gpt-4.1",
         input=prompt,
-        max_output_tokens=3000,  # more room so it doesn't cut off
+        max_output_tokens=3500,  # more room so it doesn't cut off
         temperature=0.2,
     )
 
