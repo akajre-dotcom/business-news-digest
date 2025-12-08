@@ -243,7 +243,7 @@ EDITORIAL GROUPING PRINCIPLES:
    - NO item may be omitted (except items excluded by newsroom filtering).
 
 5. BALANCE RULE – AVOID DIGEST DOMINATION:
-   - If a story cluster has more than 6 items, split into:
+   - If a story cluster has more than 15 items, split into:
        (a) a main story group  
        (b) one overflow group  
    - Never create more than TWO groups for the same underlying event.
@@ -259,11 +259,11 @@ TASK 2 – ASSIGN EACH GROUP TO ONE SECTION
 
 Each story group must belong to EXACTLY ONE of:
 
-A. 🇮🇳 India – Economy & Markets  
-B. 🇮🇳 India – Corporate, Sectors, Startups & Deals  
-C. 🌏 Global – Markets & Macro  
-D. 💍 Jewellery, Gold, Gems & Retail  
-E. 🧩 Other Business & Consumer Trends  
+A. 🇮🇳 India – Economy, Markets, Corporate, Sectors, Startups & Deal
+B. Global – Economy, Markets, Corporate, Sectors, Startups & Deal
+C. Jewellery, Gold, Gems & Retail  
+D. Other Business related & Consumer Trends 
+E. Stock Market - Share, Price etc
 
 Choose the section best matching the *main focus* of the group.
 
