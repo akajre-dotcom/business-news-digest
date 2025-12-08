@@ -140,7 +140,11 @@ def ask_ai_for_digest(headlines_text: str) -> str:
     client = OpenAI(api_key=api_key)
 
     prompt = """
-You are an Indian business & markets analyst.
+You are an expert financial and business journalist writing for an Indian
+audience, with a focus on jewellery, gold, gems, diamonds, and retail
+(where relevant).
+
+Read the article text below and write a clear, structured summary.
 
 Below is a list of items from multiple business news sites.
 Each has: [Source], Title, Summary, Link.
@@ -170,9 +174,11 @@ If multiple items are clearly about the same underlying event (same company, sam
 - Use the clearest headline as the title.
 - Use summaries to enrich the bullets.
 
-Aim for about 25–35 final stories (after merging).
-If there are fewer distinct stories, output as many as exist.
-Do NOT invent extra stories.
+Aim for about 50–70 final stories (after merging).
+If there are fewer distinct stories, output as many as exist. 
+
+Also give me count in the end like read x number of stories form link 1 and so on, total stories was y, out of that z stories was unique. and giving out a no of stories.
+Do NOT invent extra stories. Give proper statistics.
 
 ---------------- SECTIONS ----------------
 Group stories into these sections:
@@ -195,8 +201,8 @@ For EACH story, output EXACTLY this structure:
   <h3>HEADLINE (Source)</h3>
   <ul>
     <li><b>What’s happening:</b> one short sentence summarising the key fact or outcome, ADDING detail beyond the headline. Do NOT repeat the headline wording.</li>
-    <li><b>Why it’s happening:</b> one short sentence explaining the main driver or cause, using information from the summary (e.g. policies, demand, earnings, regulations, global trends).</li>
-    <li><b>Why it matters (for business/markets):</b> one short sentence explaining who is affected (e.g. which investors, sectors, companies, consumers) and whether the impact is likely positive, negative, or uncertain.</li>
+    <li><b>Why it’s happening:</b> one short sentence explaining the main driver or cause, using information from the summary (e.g. policy moves, demand/supply,macro trends, company strategy, global cues, regulations, etc.).</li>
+    <li><b>Why it matters (for business/markets):</b> one short sentence explaining who is affected (e.g. which investors, sectors, companies, consumers, prices, demand, margins, consumer behaviour, risks, or opportunities) and whether the impact is likely positive, negative, or uncertain.</li>
     <p><b>Impact:</b> POSITIVE / NEGATIVE / MIXED / UNCERTAIN (choose one word).</p>
   </ul>
   <p><a href="LINK_FROM_INPUT" target="_blank">Read more →</a></p>
@@ -204,9 +210,6 @@ For EACH story, output EXACTLY this structure:
 
 Extra rules for style:
 - "What’s happening" must NOT just restate the title; it should include at least one concrete detail (number, direction, timeframe, or sector) taken from the summary.
-- "Why it’s happening" should focus on causes: policy decisions, demand/supply changes, global cues, company strategy, investor behaviour, etc.
-- "Why it matters" should always mention impact on at least one of: investors, the economy, a sector, a company type (e.g. banks, exporters, IT), or consumers.
-
 
 ---------------- OVERALL HTML STRUCTURE ----------------
 For each section you actually use, output:
