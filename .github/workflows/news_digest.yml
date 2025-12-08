@@ -8,24 +8,24 @@ on:
   workflow_dispatch: {}
 
 jobs:
-  run-digest:
+  build:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install feedparser openai pytz
+          pip install -r requirements.txt
 
-      - name: Run news digest script
+      - name: Run newsletter digest
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
