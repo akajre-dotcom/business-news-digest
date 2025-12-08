@@ -171,9 +171,9 @@ def build_headlines_text(items: List[Dict]) -> str:
 def ask_ai_for_digest(headlines_text: str) -> str:
     """
     Ask OpenAI to:
-    - Group similar items
+    - Group only truly similar items (same event)
     - Use ALL items exactly once
-    - Make headline itself clickable
+    - Make headline clickable
     - Output clean grouped HTML
     """
 
@@ -191,23 +191,42 @@ Each item has: numeric ID, [Source], Title, Link.
 INPUT ITEMS:
 {headlines_text}
 
----------------- TASK 1 – CREATE STORY GROUPS ----------------
-Create groups of stories referring to the same underlying event.
+---------------- TASK 1 – CREATE STORY GROUPS (STRICTLY) ----------------
+Create "story groups" where EACH group represents ONE specific underlying event.
 
-Rules:
-- Items go in the same group if they clearly describe the same event/company/news.
-- EVERY input item MUST appear in exactly one group.
-- No item may be ignored or omitted.
-- A group may contain 1 or many items.
+STRICT grouping rules:
+- Items MUST be in the same group ONLY if they clearly describe the SAME event.
+  Examples:
+  - Same company and same main action (e.g., IndiGo flight cancellations in multiple headlines).
+  - Same specific policy decision (e.g., RBI injecting Rs 2 lakh crore liquidity).
+  - Same specific macro data print (e.g., one particular GDP print or inflation release).
+- DO NOT group items just because:
+  - They are all about "markets", "Nifty", or "economy" in general.
+  - They are all about "RBI" but refer to clearly different actions or timeframes.
+  - They are all about "gold prices" but on different days or different angles.
 
----------------- TASK 2 – CATEGORISE GROUPS ----------------
-Put each group into exactly one of these sections:
+Important:
+- If two headlines are related to different aspects of a broad theme, but not the exact same event,
+  they MUST go into separate story groups.
+- It is better to have MORE groups than to incorrectly merge unrelated stories.
+
+VERY IMPORTANT HARD RULE:
+- You MUST assign EVERY input item (each ID) to EXACTLY ONE story group.
+- NO item may be ignored or omitted.
+- NO item may appear in more than one group.
+- Some groups will have just 1 item (that's fine).
+- Some groups will have many items (same event covered by multiple sources).
+
+---------------- TASK 2 – CATEGORISE EACH GROUP ----------------
+Assign each story group to exactly ONE of these sections:
 
 A. 🇮🇳 India – Economy & Markets  
 B. 🇮🇳 India – Corporate, Sectors, Startups & Deals  
 C. 🌏 Global – Markets & Macro  
 D. 💍 Jewellery, Gold, Gems & Retail  
 E. 🧩 Other Business & Consumer Trends  
+
+Pick the section that best fits the MAIN focus of that group.
 
 ---------------- TASK 3 – OUTPUT FORMAT (HTML ONLY) ----------------
 For each section you use, output:
@@ -220,10 +239,10 @@ For each section you use, output:
       <a href="MAIN_LINK" target="_blank">MAIN HEADLINE (Source)</a>
     </h3>
 
-    <p><b>Summary:</b> 1–3 sentences combining info inferred from the grouped titles only.  
-       Do NOT invent numbers or details not present in the titles.</p>
+    <p><b>Summary:</b> 1–3 sentences in simple English, combining information inferred from
+       the grouped titles ONLY. Do NOT invent numbers, dates or specific details that are not in the titles.</p>
 
-    <!-- If more stories in the group -->
+    <!-- If group has more than 1 item -->
     <ul>
       <li><b>Also covered by:</b></li>
       <ul>
@@ -231,37 +250,44 @@ For each section you use, output:
         <li>Source – <a href="LINK_3" target="_blank">LINK_3</a></li>
       </ul>
     </ul>
+    <!-- If group has only 1 item, OMIT the "Also covered by" block entirely. -->
 
-    <!-- If only one item in the group -->
-    <!-- OMIT the entire “Also covered by” block -->
   </div>
+
+  <!-- more <div class="story"> blocks, one per story group -->
 
 </div>
 
 ---------------- RULES FOR MAIN HEADLINE ----------------
-- Choose one item in the group whose headline best describes the event.
+- Choose ONE item in the group whose headline best describes the event.
 - Its link becomes MAIN_LINK.
-- All other items go under “Also covered by”.
+- All other items in the group go under "Also covered by".
 
----------------- STRICT RULES ----------------
-- ALL input items MUST be included in exactly one story group.
-- NO drops, no omissions, no merging away of data.
-- NO invented URLs or invented news.
+---------------- HARD CONSTRAINTS ----------------
+- EVERY input item (each ID) MUST appear in exactly ONE story group.
+- NO item may be omitted or silently dropped.
+- NO item may appear in more than one group.
 - Do NOT output the numeric IDs in the final HTML.
+- Do NOT invent any URL or news.
 - Do NOT output any text outside HTML tags.
-- Do NOT output <html>, <head>, or <body> tags.
+- Do NOT output <html>, <head> or <body> tags.
 
-Output ONLY clean HTML as specified.
+Use ONLY information from titles and sources. No external knowledge.
+Output MUST be valid HTML only. No markdown, no commentary.
 """
 
     response = client.responses.create(
-        model="gpt-4.1-mini",
+        # 🔁 SWITCH MODEL HERE:
+        # "gpt-4.1-mini"  -> cheaper
+        # "gpt-4.1"       -> smarter grouping
+        model="gpt-4.1",          # <--- try upgrading to this for better grouping
         input=prompt,
         max_output_tokens=6500,
-        temperature=0.25,
+        temperature=0.2,
     )
 
     return response.output_text.strip()
+
 
 
 
