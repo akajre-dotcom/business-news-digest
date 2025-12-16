@@ -256,23 +256,59 @@ Choose the section that best fits the main focus of the story.
 
 
 ==============================================================
-STEP 3 – 7 DAILY VALUE-UPGRADE SECTIONS (OUTPUT FIRST)
+STEP 3 – 7 DAILY VALUE-UPGRADE SECTIONS (STRICT ROTATION)
 ==============================================================
 
-Before the news, output these 7 sections in this exact order.
+You must output the following 7 sections FIRST, in the exact order given.
 
-Use minimum words. Explanations must follow first-principles thinking:
-- Define the core idea.
-- Explain why it works.
-- Give 2–3 extremely practical application steps.
-- No fluff, no quotes, no long stories.
+These sections are NOT news.
+They are daily intellectual upgrades designed to compound reader skill over time.
 
-Very important:
+-----------------------------------------
+GLOBAL CONSTRAINTS (NON-NEGOTIABLE)
+-----------------------------------------
+
+1. DAILY VARIATION IS MANDATORY
+- Each section MUST use a DIFFERENT core concept every day.
+- NEVER reuse a concept, model, bias, book, or framework used in the last 7 days.
+- If a concept is commonly overused by AI (e.g. Confirmation Bias, Atomic Habits,
+  Second-Order Thinking, BATNA, Inversion, First Principles),
+  you MUST actively AVOID it unless no alternative exists.
+
+2. CONCEPT QUALITY
+- Prefer rigorous but under-discussed ideas over popular defaults.
+- Concepts must be useful for business operators, investors, managers, or professionals.
+- Avoid motivational clichés, productivity hacks, or self-help fluff.
+
+3. TIME & DATA RULES
 - You do NOT have live data.
-- For these 7 sections, choose examples that are timeless / generally true.
-- Do NOT mention dates or “yesterday”.
-- If you mention a CEO, company, or book, choose well-known, high-signal ones.
+- Do NOT mention dates, “today”, “yesterday”, or current events.
+- All examples must be timeless and generally true.
 
+4. WRITING STYLE
+- Use minimal words.
+- Use first-principles reasoning.
+- No quotes, no storytelling, no anecdotes.
+- No emojis inside section content.
+- No references to being an AI.
+
+5. CONCEPT ROTATION POOLS
+Across the 7 sections, you MUST rotate across DIFFERENT intellectual domains.
+Do NOT pick more than one concept from the same pool in a single day.
+
+Concept pools include:
+- Economics & incentives
+- Psychology & cognition
+- Strategy & competition
+- Operations & execution
+- Risk, uncertainty & probability
+- Career capital & skills
+- Negotiation & power dynamics
+- Decision science & judgment
+
+-----------------------------------------
+SECTION OUTPUT FORMAT (STRICT)
+-----------------------------------------
 
 --------------------------------------
 <h2>🗣 Communication Upgrade of the Day</h2>
@@ -280,107 +316,103 @@ Very important:
   <div class="story">
     <h3>SKILL NAME</h3>
     <ul>
-      <li><b>What it is:</b> Short, first-principles definition.</li>
-      <li><b>Why it works:</b> One sentence explaining the underlying psychological or logical mechanism.</li>
-      <li><b>How to apply:</b> 2–3 direct, real-world steps anyone can use today.</li>
+      <li><b>What it is:</b> A one-sentence, first-principles definition of the communication skill.</li>
+      <li><b>Why it works:</b> One sentence explaining the cognitive or incentive-based mechanism.</li>
+      <li><b>How to apply:</b> 2–3 direct, practical actions usable in meetings, emails, or leadership contexts.</li>
     </ul>
   </div>
 </div>
 
-
-------------------------------
+--------------------------------------
 <h2>🧠 Mental Model of the Day</h2>
 <div class="section">
   <div class="story">
     <h3>MENTAL MODEL NAME</h3>
     <ul>
-      <li><b>Core principle:</b> One-line explanation of the idea from first principles.</li>
-      <li><b>Why it matters:</b> One sentence on how it improves decision-making.</li>
-      <li><b>How to use:</b> 2–3 short, practical steps or scenarios.</li>
+      <li><b>Core principle:</b> One-line explanation from first principles.</li>
+      <li><b>Why it matters:</b> One sentence describing how it improves judgment or outcomes.</li>
+      <li><b>How to use:</b> 2–3 concrete situations where this model should be applied.</li>
     </ul>
   </div>
 </div>
 
-
--------------------------------
+--------------------------------------
 <h2>🧩 Cognitive Bias of the Day</h2>
 <div class="section">
   <div class="story">
     <h3>BIAS NAME</h3>
     <ul>
       <li><b>What it is:</b> One-sentence definition.</li>
-      <li><b>Why it happens:</b> First-principles explanation of the brain mechanism behind the bias.</li>
-      <li><b>How to counter it:</b> 2–3 actionable, simple steps.</li>
+      <li><b>Why it happens:</b> Explanation rooted in brain limits, incentives, or evolutionary shortcuts.</li>
+      <li><b>How to counter it:</b> 2–3 simple, operational counter-measures.</li>
     </ul>
   </div>
 </div>
 
-
--------------------------------------
+--------------------------------------
 <h2>📘 1-Page Book Summary of the Day</h2>
 <div class="section">
   <div class="story">
     <h3>BOOK TITLE (Author)</h3>
     <ul>
-      <li><b>Core idea:</b> One powerful sentence summarising the book’s main argument.</li>
-      <li><b>Key principles:</b> 3–4 bullets, each expressing a first-principles insight.</li>
-      <li><b>How to apply:</b> 2–3 practical actions based on the book’s ideas.</li>
+      <li><b>Core idea:</b> One precise sentence capturing the book’s main argument.</li>
+      <li><b>Key principles:</b> 3–4 bullets expressing fundamental insights (not summaries).</li>
+      <li><b>How to apply:</b> 2–3 real-world actions derived from those principles.</li>
     </ul>
   </div>
 </div>
 
 Rules for choosing the book:
-- Choose a widely known, high-impact non-fiction book
-  in business, investing, decision-making, psychology, or careers.
-- Do NOT claim the book was released “recently” or “yesterday”.
+- Must be a well-regarded non-fiction book in business, investing, strategy,
+  psychology, decision-making, or careers.
+- Avoid the most commonly summarised books unless absolutely necessary.
+- Do NOT claim the book is “new”, “recent”, or “just released”.
 
-
--------------------------------
-<h2>🏢 What Top CEOs Are Saying</h2>
+--------------------------------------
+<h2>🏢 What Top CEOs Are Known For</h2>
 <div class="section">
   <div class="story">
     <h3>COMPANY / CEO</h3>
     <ul>
-      <li><b>Main message:</b> One-line summary of a typical strategic or cultural message this CEO is known for.</li>
-      <li><b>Reasoning:</b> One sentence on the underlying principle or strategy behind that message.</li>
-      <li><b>Implication:</b> One sentence on what it means for employees, investors, or customers.</li>
+      <li><b>Main message:</b> One timeless strategic belief or operating philosophy.</li>
+      <li><b>Reasoning:</b> The economic, strategic, or cultural logic behind it.</li>
+      <li><b>Implication:</b> What this means for employees, customers, or investors.</li>
     </ul>
   </div>
 </div>
 
 Rules:
-- Pick a well-known CEO of a major global or Indian company.
-- Use a timeless, representative message (e.g., focus on customers, long-term thinking),
-  not a “yesterday” quote.
-- Do NOT mention dates.
+- Choose a major global or Indian CEO.
+- Use a representative, enduring philosophy — not a quote or recent comment.
+- Avoid repeating the same CEO within a 7-day window.
 
-
----------------------------------------
+--------------------------------------
 <h2>🎯 Decision-Making Model of the Day</h2>
 <div class="section">
   <div class="story">
     <h3>MODEL NAME</h3>
     <ul>
-      <li><b>Principle:</b> One-line first-principles definition.</li>
-      <li><b>Why it works:</b> One sentence explaining the mechanism.</li>
-      <li><b>How to use:</b> 2–3 simple steps.</li>
+      <li><b>Principle:</b> One-line definition grounded in decision science.</li>
+      <li><b>Why it works:</b> Explanation of the mechanism (probability, incentives, constraints).</li>
+      <li><b>How to use:</b> 2–3 steps applicable to business or personal decisions.</li>
     </ul>
   </div>
 </div>
 
-
------------------------------------
+--------------------------------------
 <h2>🤝 Negotiation Model of the Day</h2>
 <div class="section">
   <div class="story">
     <h3>MODEL NAME</h3>
     <ul>
-      <li><b>What it is:</b> Short definition focusing on incentives and first principles.</li>
-      <li><b>Why it works:</b> One sentence explaining the psychology or logic behind it.</li>
-      <li><b>How to apply:</b> 2–3 methods usable in real workplace or business negotiations.</li>
+      <li><b>What it is:</b> Definition focused on leverage, incentives, or information.</li>
+      <li><b>Why it works:</b> One sentence explaining the psychology or game-theory logic.</li>
+      <li><b>How to apply:</b> 2–3 concrete methods usable in salary, vendor, or deal negotiations.</li>
     </ul>
   </div>
 </div>
+
+END OF STEP 3
 
 
 ==============================================================
@@ -436,7 +468,7 @@ End of instructions.
         model="gpt-4.1",
         input=prompt,
         max_output_tokens=3500,
-        temperature=0.2,
+        temperature=0.45,
     )
 
     return response.output_text.strip()
