@@ -153,10 +153,10 @@ def build_headlines_text(items: List[Dict]) -> str:
 # 4. CALL OPENAI – 7 VALUE SECTIONS + NEWS FRONT PAGE
 # =======================
 
-def ask_ai_for_digest(headlines_text: str) -> str:
+def ask_ai_for_digest(headlines_text: str, digest_type: str) -> str:
     """
-    Jewellery Industry Intelligence Digest
-    India + Middle East | Mine → Market → Future
+    Role-based Jewellery Industry Intelligence Digest
+    Clean, non-repeating, CEO-grade
     """
 
     if "OPENAI_API_KEY" not in os.environ:
@@ -164,211 +164,193 @@ def ask_ai_for_digest(headlines_text: str) -> str:
 
     client = OpenAI()
 
+    ROLE_INSTRUCTIONS = {
+        "retailer": """
+Focus on walk-in demand, sell-through, inventory rotation,
+discounting pressure, and customer behaviour.
+Explain in simple language a store owner understands.
+""",
+        "manufacturer": """
+Focus on order flow, capacity utilisation, costs, labour,
+working capital, and product mix decisions.
+""",
+        "exporter": """
+Focus on US, Europe, and Middle East demand,
+buyer behaviour, margins, and currency impact.
+""",
+        "miner": """
+Focus on supply discipline, pricing power,
+and downstream stress signals.
+""",
+        "trader": """
+Focus on gold and silver price direction,
+physical vs paper demand, and short-term risk.
+""",
+        "investor": """
+Focus on market share shifts, balance sheet strength,
+cycle positioning, and long-term winners vs traps.
+"""
+    }
+
     prompt = f"""
-You are a senior jewellery-industry intelligence analyst advising:
-- Gold & silver traders
-- Diamond miners, cutters, and manufacturers
-- Jewellery wholesalers and luxury retailers
-across India and the Middle East.
+You are a senior jewellery-industry advisor mentoring promoters,
+CEOs, and family business owners.
 
-You think end-to-end: mine → refining → manufacturing → wholesale → retail → consumer → future.
+PRIMARY ROLE TODAY: {digest_type.upper()}
 
-INPUT DATA:
-Below is a flat list of news headlines collected from business, bullion,
-diamond, jewellery, and regional (India & ME) sources.
+{ROLE_INSTRUCTIONS.get(digest_type, "")}
 
+India is the core market.
+Middle East, US, and Europe are analysed only for their impact on India or jewellery industry.
+
+INPUT HEADLINES:
 {headlines_text}
 
 ====================================================
-GLOBAL FILTER RULES (STRICT)
+FILTER RULES
 ====================================================
-
-KEEP ONLY headlines that affect:
-- Gold, silver pricing or physical demand
-- Diamond (rough, polished, lab-grown, polki) supply-demand
-- Jewellery manufacturing, exports, retail, margins
-- Import/export policy, duties, regulation
-- Major players’ strategic or supply decisions
-- India or Middle East jewellery demand
-
-EXCLUDE completely:
-- Celebrity, fashion shows, brand marketing
-- Lifestyle, gifting guides, festivals
-- Generic politics without economic impact
-- Crime, human interest, or viral content
-
-If relevance is unclear → DROP it.
+Keep ONLY news that affects jewellery economics.
+Drop marketing, lifestyle, PR, celebrity, and generic politics.
 
 ====================================================
-DIGEST STRUCTURE (MANDATORY ORDER)
+OUTPUT RULES
+====================================================
+- PURE HTML only (no <html>, <body>, <head>)
+- Simple, clear language
+- Explain what it means for business
+- No invented numbers or quotes
+
+====================================================
+DIGEST STRUCTURE (SINGLE, FINAL)
 ====================================================
 
-Output PURE HTML only (no <html>, <body>, <head> tags).
-
---------------------------------------
 <h2>🔎 Executive Snapshot</h2>
 <div class="section">
 <ul>
-<li><b>Gold bias:</b> Directional view (bullish / bearish / neutral) with reason.</li>
-<li><b>Silver bias:</b> Directional view with reason.</li>
-<li><b>Diamond market tone:</b> Tight / balanced / oversupplied.</li>
-<li><b>Jewellery demand:</b> India vs Middle East comparison.</li>
+<li>What changed today.</li>
+<li>Why it matters.</li>
+<li>Who benefits and who is under stress.</li>
 </ul>
 </div>
 
---------------------------------------
 <h2>🌍 Macro & Policy Drivers</h2>
 <div class="section">
 <ul>
 <li>Interest rates, currencies, central banks.</li>
-<li>Gold import/export duties, regulations.</li>
+<li>Gold import/export duties and regulation.</li>
 <li>Geopolitical or energy-linked demand drivers.</li>
 </ul>
 </div>
 
---------------------------------------
 <h2>🪙 Bullion Intelligence – Gold & Silver</h2>
 <div class="section">
 <ul>
 <li>Spot vs physical demand signals.</li>
-<li>India local premium/discount insights.</li>
+<li>India local premium or discount.</li>
 <li>UAE / GCC physical buying behaviour.</li>
 </ul>
 </div>
 
---------------------------------------
 <h2>💎 Diamonds & Polki – Supply Chain Health</h2>
 <div class="section">
 <ul>
-<li>Rough supply discipline vs polished inventory.</li>
-<li>Lab-grown diamond price and margin trend.</li>
-<li>Polki / uncut diamond bridal demand signals.</li>
+<li>Rough supply vs polished inventory.</li>
+<li>Lab-grown vs natural diamond demand.</li>
+<li>Polki and bridal jewellery signals.</li>
 </ul>
 </div>
 
---------------------------------------
 <h2>🎨 Coloured Stones & High-Margin Niches</h2>
 <div class="section">
 <ul>
 <li>Emerald, ruby, sapphire availability.</li>
-<li>Luxury and bespoke demand in Middle East.</li>
+<li>Luxury and bespoke demand trends.</li>
 </ul>
 </div>
 
---------------------------------------
-<h2>🇮🇳 India vs 🇦🇪 Middle East Demand Split</h2>
+<h2>🇮🇳 India vs 🇦🇪 Middle East Demand</h2>
 <div class="section">
 <ul>
 <li>India: weddings, rural vs urban demand.</li>
-<li>ME: tourism, oil-linked luxury spending.</li>
+<li>ME: tourism-driven and oil-linked spending.</li>
 </ul>
 </div>
 
---------------------------------------
 <h2>🏢 Major Players – Strategic Moves</h2>
 <div class="section">
 <ul>
-<li>Supply cuts, expansions, or inventory moves.</li>
-<li>Retail expansion, consolidation, or exits.</li>
+<li>Expansion, consolidation, or defensive moves.</li>
+<li>Inventory or supply-side actions.</li>
 </ul>
 </div>
 
---------------------------------------
+<h2>🏬 Retailer Deep Dive of the Day</h2>
+<div class="section">
+<ul>
+<li>Profile and target customer.</li>
+<li>Core strength.</li>
+<li>Go-to-market strategy.</li>
+<li>Competitive edge.</li>
+</ul>
+</div>
+
+<h2>📦 Product & Sell-Through Intelligence</h2>
+<div class="section">
+<ul>
+<li>Fast-moving categories.</li>
+<li>Slow or stressed inventory.</li>
+<li>Trade-up vs trade-down behaviour.</li>
+</ul>
+</div>
+
 <h2>📊 Margin & Inventory Stress Signals</h2>
 <div class="section">
 <ul>
 <li>Where margins are expanding or compressing.</li>
-<li>Which segment is under stress today.</li>
+<li>Which segment is under pressure.</li>
 </ul>
 </div>
 
---------------------------------------
-<h2>🔮 Forward Signals (3–12 Month View)</h2>
-<div class="section">
-<ul>
-<li>Technology, regulation, consumer behaviour shifts.</li>
-<li>Capital flows or structural changes.</li>
-</ul>
-</div>
-
---------------------------------------
-<h2>🎯 Strategic Question of the Day</h2>
-<div class="section">
-<p>
-If a jewellery business had to make one strategic decision today,
-what should it be and why?
-</p>
-</div>
-
---------------------------------------
 <h2>📰 Editorial Must-Read</h2>
 <div class="section">
 <ul>
-<li><b>What it is:</b> One high-signal article, interview, or report worth deep attention.</li>
-<li><b>Why it matters:</b> The strategic or economic implication for the jewellery industry.</li>
-<li><b>Key insight:</b> One non-obvious takeaway industry leaders should internalise.</li>
+<li>One article worth deep attention.</li>
+<li>Main business lesson.</li>
 </ul>
 </div>
 
---------------------------------------
 <h2>🗣️ Industry Voice of the Day</h2>
 <div class="section">
 <ul>
-<li><b>Who:</b> The type of expert (retailer, trader, analyst, trade body).</li>
-<li><b>What they believe:</b> Their current stance or concern.</li>
-<li><b>What this signals:</b> What behaviour is likely to follow in the industry.</li>
+<li>What industry insiders believe.</li>
+<li>What behaviour this signals.</li>
 </ul>
 </div>
 
---------------------------------------
-<h2>🏬 Retailer Deep Dive of the Day</h2>
-<div class="section">
-<ul>
-<li><b>Retailer profile:</b> Size, geography, target customer.</li>
-<li><b>Core strength:</b> Product, pricing, brand, or operations.</li>
-<li><b>Customer persona:</b> Who actually buys from them and why.</li>
-<li><b>Go-to-market strategy:</b> Store-led, digital-first, bridal-heavy, luxury-led.</li>
-<li><b>Competitive edge:</b> What rivals underestimate about them.</li>
-</ul>
-</div>
-
---------------------------------------
-<h2>📦 Product & Sell-Through Intelligence</h2>
-<div class="section">
-<ul>
-<li>Fast-moving vs slow-moving categories.</li>
-<li>Inventory pressure points.</li>
-<li>Consumer trade-down or trade-up signals.</li>
-</ul>
-</div>
-
---------------------------------------
 <h2>📐 Trend Classification</h2>
 <div class="section">
 <ul>
-<li><b>Observed trend:</b> What appears to be gaining attention.</li>
-<li><b>Classification:</b> Fad / Cyclical / Structural.</li>
-<li><b>Strategic implication:</b> Act now, watch carefully, or ignore.</li>
+<li>Trend observed.</li>
+<li>Fad, cyclical, or structural.</li>
+<li>What to do about it.</li>
 </ul>
 </div>
 
+<h2>🎯 Strategic Question of the Day</h2>
+<div class="section">
+<p>
+If you were running a jewellery business today,
+what decision deserves serious thinking — and why?
+</p>
+</div>
 
 ====================================================
 HARD RULES
 ====================================================
-
-- Use ONLY information inferable from headlines.
-- Do NOT invent numbers, prices, or quotes.
-- Prefer incentives and supply-demand logic.
-- Be concise, analytical, and operator-focused.
-- No marketing language, no hype.
-- Avoid repeating the same retailer, brand, or expert within a 14-day window.
-- Retailer Deep Dive must rotate across:
-  national chains, regional players, D2C brands, luxury boutiques.
-- Sell-through insights must be inferred from incentives, pricing behaviour,
-  inventory mentions, and expansion or discounting signals.
-- Prefer uncomfortable truths over optimistic narratives.
-
+- Use ONLY headline-based information
+- No hype, no marketing language
+- Prefer uncomfortable truths
+- Rotate retailers and experts (no repetition within 14 days)
 
 End of instructions.
 """
@@ -377,10 +359,11 @@ End of instructions.
         model="gpt-4.1",
         input=prompt,
         temperature=0.35,
-        max_output_tokens=3000,
+        max_output_tokens=3200,
     )
 
     return response.output_text.strip()
+
 
 
 
