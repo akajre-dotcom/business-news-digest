@@ -18,36 +18,25 @@ from openai import OpenAI
 # =======================
 
 RSS_FEEDS = [
-    # --- Livemint (updated official RSS, no 'RSS' suffix) ---
-    "https://www.livemint.com/rss/news",
-    "https://www.livemint.com/rss/companies",
-    "https://www.livemint.com/rss/markets",
-    "https://www.livemint.com/rss/industry",
-    "https://www.livemint.com/rss/money",
+    # World Gold Council, LBMA, Central Bank Gold (via Google News)
+    "https://news.google.com/rss/search?q=World+Gold+Council+gold+demand&hl=en-IN&gl=IN&ceid=IN:en",
+    "https://news.google.com/rss/search?q=LBMA+gold+market&hl=en-IN&gl=IN&ceid=IN:en",
+    "https://news.google.com/rss/search?q=central+bank+gold+buying&hl=en-IN&gl=IN&ceid=IN:en",
 
-    # --- Business Standard ---
-    "https://www.business-standard.com/rss/latest.rss",
+    # Diamonds – Rough, Polished, Supply
+    "https://news.google.com/rss/search?q=De+Beers+diamond+sales&hl=en-IN&gl=IN&ceid=IN:en",
+    "https://news.google.com/rss/search?q=ALROSA+diamond+market&hl=en-IN&gl=IN&ceid=IN:en",
+    "https://news.google.com/rss/search?q=Rapaport+diamond+market&hl=en-IN&gl=IN&ceid=IN:en",
 
-    # --- Economic Times (default) ---
-    "https://economictimes.indiatimes.com/rssfeedsdefault.cms",
+    # India Jewellery Manufacturing
+    "https://news.google.com/rss/search?q=GJEPC+jewellery+export+India&hl=en-IN&gl=IN&ceid=IN:en",
+    "https://news.google.com/rss/search?q=Surat+diamond+industry&hl=en-IN&gl=IN&ceid=IN:en",
+    "https://news.google.com/rss/search?q=Jaipur+gems+industry&hl=en-IN&gl=IN&ceid=IN:en",
 
-    # --- Hindustan Times (Business – alternative RSS) ---
-    "http://feeds.hindustantimes.com/HT-Business?format=xml",
-
-    # --- Indian Express (Business main) ---
-    "https://indianexpress.com/section/business/feed/",
-
-    # --- Jewellery / Gold / Gems / Diamond retail (Google News) ---
-    "https://news.google.com/rss/search?q=jewellery+OR+gold+OR+gems+OR+diamond+retail&hl=en-IN&gl=IN&ceid=IN:en",
-
-    # --- Indian Express (Business – Markets) ---
-    "https://indianexpress.com/section/business/market/feed/",
-
-    # --- Economic Times (Economy) ---
-    "https://economictimes.indiatimes.com/rssfeeds/1373380680.cms",
-
-    # --- Moneycontrol (Markets via Google News) ---
-    "https://news.google.com/rss/search?q=site:moneycontrol.com+markets&hl=en-IN&gl=IN&ceid=IN:en",
+    # Middle East Jewellery & Gold Retail
+    "https://news.google.com/rss/search?q=Dubai+gold+market+jewellery&hl=en-IN&gl=IN&ceid=IN:en",
+    "https://news.google.com/rss/search?q=UAE+jewellery+retail&hl=en-IN&gl=IN&ceid=IN:en",
+    "https://news.google.com/rss/search?q=Saudi+Arabia+jewellery+luxury&hl=en-IN&gl=IN&ceid=IN:en",
 ]
 
 MAX_ITEMS_PER_FEED = 15
@@ -166,11 +155,8 @@ def build_headlines_text(items: List[Dict]) -> str:
 
 def ask_ai_for_digest(headlines_text: str) -> str:
     """
-    Calls OpenAI to:
-    - Filter to serious business/economic news
-    - Pick a small set of high-impact, diverse stories (front-page style)
-    - Ensure at most 1 story per company/theme
-    - Output: first 7 daily value-upgrade sections, then news sections
+    Jewellery Industry Intelligence Digest
+    India + Middle East | Mine → Market → Future
     """
 
     if "OPENAI_API_KEY" not in os.environ:
@@ -179,287 +165,210 @@ def ask_ai_for_digest(headlines_text: str) -> str:
     client = OpenAI()
 
     prompt = f"""
-You are an expert business journalist and senior newsroom editor.
-You must create a *front-page style* digest for a smart Indian reader.
+You are a senior jewellery-industry intelligence analyst advising:
+- Gold & silver traders
+- Diamond miners, cutters, and manufacturers
+- Jewellery wholesalers and luxury retailers
+across India and the Middle East.
 
-You receive a flat list of news items from multiple business, finance,
-markets, industry, and jewellery RSS feeds.
-Each item has: numeric ID, [Source], Title, Link.
+You think end-to-end: mine → refining → manufacturing → wholesale → retail → consumer → future.
 
-INPUT ITEMS:
+INPUT DATA:
+Below is a flat list of news headlines collected from business, bullion,
+diamond, jewellery, and regional (India & ME) sources.
+
 {headlines_text}
 
+====================================================
+GLOBAL FILTER RULES (STRICT)
+====================================================
 
-==============================================================
-STEP 0 – PROFESSIONAL NEWSROOM FILTER
-==============================================================
+KEEP ONLY headlines that affect:
+- Gold, silver pricing or physical demand
+- Diamond (rough, polished, lab-grown, polki) supply-demand
+- Jewellery manufacturing, exports, retail, margins
+- Import/export policy, duties, regulation
+- Major players’ strategic or supply decisions
+- India or Middle East jewellery demand
 
-Filter headlines STRICTLY — keep ONLY serious business/economic content.
+EXCLUDE completely:
+- Celebrity, fashion shows, brand marketing
+- Lifestyle, gifting guides, festivals
+- Generic politics without economic impact
+- Crime, human interest, or viral content
 
-EXCLUDE completely (do NOT mention or summarise these):
-- Celebrity / OTT / entertainment / gossip.
-- Crime/court drama unless it clearly affects a business, company, sector, or market.
-- Viral videos, outrage, memes, human-interest odd stories.
-- Lifestyle, travel pieces, festivals, weather.
-- Pure politics with no business, market, or policy consequence.
-- Local accidents or general news with no corporate or macro impact.
+If relevance is unclear → DROP it.
 
-KEEP ONLY IF the story clearly affects:
-- Companies, sectors, competition, governance, earnings, strategy.
-- Financial markets: stocks, bonds, commodities, currencies, crypto.
-- RBI / central bank / regulators / taxation / policy changes.
-- Macro indicators: GDP, inflation, trade, fiscal.
-- Startups, funding, IPOs, acquisitions, PE/VC.
-- Gold, jewellery, gems / diamond retail trends with commercial impact.
+====================================================
+DIGEST STRUCTURE (MANDATORY ORDER)
+====================================================
 
-If relevance is not obvious → EXCLUDE it.
-
-
-==============================================================
-STEP 1 – SELECT DISTINCT, HIGH-IMPACT NEWS STORIES
-==============================================================
-
-From the filtered headlines, select a small, *diverse* set of stories.
-
-HARD LIMITS:
-- You MUST output AT MOST 15 news stories in total (across all sections).
-- For any single company / instrument / crisis / theme,
-  you may output AT MOST 1 news story in the digest.
-
-This means:
-- If there are many headlines about the same IndiGo crisis, RBI move, or macro data,
-  mentally combine them and write JUST ONE summary for that topic.
-- Prioritise breadth and variety over completeness.
-
-PRIORITISE:
-- Systemic impact (economy, markets, RBI, major policy).
-- Big corporate moves (M&A, funding, IPOs, major sector shifts).
-- Clear investor / sector impact.
-- Jewellery / gold where there is real business relevance.
-
-You are allowed to DROP less-important stories completely.
-
-
-==============================================================
-STEP 2 – ASSIGN EACH NEWS STORY TO ONE SECTION
-==============================================================
-
-Each chosen news story must go to EXACTLY ONE of:
-
-A. 🇮🇳 India – Economy, Markets, Corporate, Sectors, Startups & Deal  
-B. 🌏 Global – Economy, Markets, Corporate, Sectors, Startups & Deal  
-C. 💍 Jewellery, Gold, Gems & Retail  
-D. 🧩 Other Business related & Consumer Trends  
-E. 📈 Stock Market – Shares, Prices, Analysis  
-
-Choose the section that best fits the main focus of the story.
-
-
-==============================================================
-STEP 3 – 7 DAILY VALUE-UPGRADE SECTIONS (STRICT ROTATION)
-==============================================================
-
-You must output the following 7 sections FIRST, in the exact order given.
-
-These sections are NOT news.
-They are daily intellectual upgrades designed to compound reader skill over time.
-
------------------------------------------
-GLOBAL CONSTRAINTS (NON-NEGOTIABLE)
------------------------------------------
-
-1. DAILY VARIATION IS MANDATORY
-- Each section MUST use a DIFFERENT core concept every day.
-- NEVER reuse a concept, model, bias, book, or framework used in the last 7 days.
-- If a concept is commonly overused by AI (e.g. Confirmation Bias, Atomic Habits,
-  Second-Order Thinking, BATNA, Inversion, First Principles),
-  you MUST actively AVOID it unless no alternative exists.
-
-2. CONCEPT QUALITY
-- Prefer rigorous but under-discussed ideas over popular defaults.
-- Concepts must be useful for business operators, investors, managers, or professionals.
-- Avoid motivational clichés, productivity hacks, or self-help fluff.
-
-3. TIME & DATA RULES
-- You do NOT have live data.
-- Do NOT mention dates, “today”, “yesterday”, or current events.
-- All examples must be timeless and generally true.
-
-4. WRITING STYLE
-- Use minimal words.
-- Use first-principles reasoning.
-- No quotes, no storytelling, no anecdotes.
-- No emojis inside section content.
-- No references to being an AI.
-
-5. CONCEPT ROTATION POOLS
-Across the 7 sections, you MUST rotate across DIFFERENT intellectual domains.
-Do NOT pick more than one concept from the same pool in a single day.
-
-Concept pools include:
-- Economics & incentives
-- Psychology & cognition
-- Strategy & competition
-- Operations & execution
-- Risk, uncertainty & probability
-- Career capital & skills
-- Negotiation & power dynamics
-- Decision science & judgment
-
------------------------------------------
-SECTION OUTPUT FORMAT (STRICT)
------------------------------------------
+Output PURE HTML only (no <html>, <body>, <head> tags).
 
 --------------------------------------
-<h2>🗣 Communication Upgrade of the Day</h2>
+<h2>🔎 Executive Snapshot</h2>
 <div class="section">
-  <div class="story">
-    <h3>SKILL NAME</h3>
-    <ul>
-      <li><b>What it is:</b> A one-sentence, first-principles definition of the communication skill.</li>
-      <li><b>Why it works:</b> One sentence explaining the cognitive or incentive-based mechanism.</li>
-      <li><b>How to apply:</b> 2–3 direct, practical actions usable in meetings, emails, or leadership contexts.</li>
-    </ul>
-  </div>
+<ul>
+<li><b>Gold bias:</b> Directional view (bullish / bearish / neutral) with reason.</li>
+<li><b>Silver bias:</b> Directional view with reason.</li>
+<li><b>Diamond market tone:</b> Tight / balanced / oversupplied.</li>
+<li><b>Jewellery demand:</b> India vs Middle East comparison.</li>
+</ul>
 </div>
 
 --------------------------------------
-<h2>🧠 Mental Model of the Day</h2>
+<h2>🌍 Macro & Policy Drivers</h2>
 <div class="section">
-  <div class="story">
-    <h3>MENTAL MODEL NAME</h3>
-    <ul>
-      <li><b>Core principle:</b> One-line explanation from first principles.</li>
-      <li><b>Why it matters:</b> One sentence describing how it improves judgment or outcomes.</li>
-      <li><b>How to use:</b> 2–3 concrete situations where this model should be applied.</li>
-    </ul>
-  </div>
+<ul>
+<li>Interest rates, currencies, central banks.</li>
+<li>Gold import/export duties, regulations.</li>
+<li>Geopolitical or energy-linked demand drivers.</li>
+</ul>
 </div>
 
 --------------------------------------
-<h2>🧩 Cognitive Bias of the Day</h2>
+<h2>🪙 Bullion Intelligence – Gold & Silver</h2>
 <div class="section">
-  <div class="story">
-    <h3>BIAS NAME</h3>
-    <ul>
-      <li><b>What it is:</b> One-sentence definition.</li>
-      <li><b>Why it happens:</b> Explanation rooted in brain limits, incentives, or evolutionary shortcuts.</li>
-      <li><b>How to counter it:</b> 2–3 simple, operational counter-measures.</li>
-    </ul>
-  </div>
+<ul>
+<li>Spot vs physical demand signals.</li>
+<li>India local premium/discount insights.</li>
+<li>UAE / GCC physical buying behaviour.</li>
+</ul>
 </div>
 
 --------------------------------------
-<h2>📘 1-Page Book Summary of the Day</h2>
+<h2>💎 Diamonds & Polki – Supply Chain Health</h2>
 <div class="section">
-  <div class="story">
-    <h3>BOOK TITLE (Author)</h3>
-    <ul>
-      <li><b>Core idea:</b> One precise sentence capturing the book’s main argument.</li>
-      <li><b>Key principles:</b> 3–4 bullets expressing fundamental insights (not summaries).</li>
-      <li><b>How to apply:</b> 2–3 real-world actions derived from those principles.</li>
-    </ul>
-  </div>
-</div>
-
-Rules for choosing the book:
-- Must be a well-regarded non-fiction book in business, investing, strategy,
-  psychology, decision-making, or careers.
-- Avoid the most commonly summarised books unless absolutely necessary.
-- Do NOT claim the book is “new”, “recent”, or “just released”.
-
---------------------------------------
-<h2>🏢 What Top CEOs Are Known For</h2>
-<div class="section">
-  <div class="story">
-    <h3>COMPANY / CEO</h3>
-    <ul>
-      <li><b>Main message:</b> One timeless strategic belief or operating philosophy.</li>
-      <li><b>Reasoning:</b> The economic, strategic, or cultural logic behind it.</li>
-      <li><b>Implication:</b> What this means for employees, customers, or investors.</li>
-    </ul>
-  </div>
-</div>
-
-Rules:
-- Choose a major global or Indian CEO.
-- Use a representative, enduring philosophy — not a quote or recent comment.
-- Avoid repeating the same CEO within a 7-day window.
-
---------------------------------------
-<h2>🎯 Decision-Making Model of the Day</h2>
-<div class="section">
-  <div class="story">
-    <h3>MODEL NAME</h3>
-    <ul>
-      <li><b>Principle:</b> One-line definition grounded in decision science.</li>
-      <li><b>Why it works:</b> Explanation of the mechanism (probability, incentives, constraints).</li>
-      <li><b>How to use:</b> 2–3 steps applicable to business or personal decisions.</li>
-    </ul>
-  </div>
+<ul>
+<li>Rough supply discipline vs polished inventory.</li>
+<li>Lab-grown diamond price and margin trend.</li>
+<li>Polki / uncut diamond bridal demand signals.</li>
+</ul>
 </div>
 
 --------------------------------------
-<h2>🤝 Negotiation Model of the Day</h2>
+<h2>🎨 Coloured Stones & High-Margin Niches</h2>
 <div class="section">
-  <div class="story">
-    <h3>MODEL NAME</h3>
-    <ul>
-      <li><b>What it is:</b> Definition focused on leverage, incentives, or information.</li>
-      <li><b>Why it works:</b> One sentence explaining the psychology or game-theory logic.</li>
-      <li><b>How to apply:</b> 2–3 concrete methods usable in salary, vendor, or deal negotiations.</li>
-    </ul>
-  </div>
+<ul>
+<li>Emerald, ruby, sapphire availability.</li>
+<li>Luxury and bespoke demand in Middle East.</li>
+</ul>
 </div>
 
-END OF STEP 3
-
-
-==============================================================
-STEP 4 – NEWS SECTIONS FORMAT (AFTER VALUE-UPGRADE SECTIONS)
-==============================================================
-
-After the 7 sections above, output the news sections.
-
-For each section that has at least one story, use:
-
-<h2>SECTION TITLE</h2>
+--------------------------------------
+<h2>🇮🇳 India vs 🇦🇪 Middle East Demand Split</h2>
 <div class="section">
-
-  <div class="story">
-    <p>
-      <a href="MAIN_LINK" target="_blank">
-        <b>[MAIN_SOURCE]</b> –
-        ONE short sentence in clean, neutral English describing
-        what happened and why it matters.
-      </a>
-    </p>
-  </div>
-
-  <!-- more <div class="story"> blocks -->
-
+<ul>
+<li>India: weddings, rural vs urban demand.</li>
+<li>ME: tourism, oil-linked luxury spending.</li>
+</ul>
 </div>
 
-SUMMARY RULES:
-- The summary itself must be clickable (inside the <a> tag).
-- Do NOT just repeat the headline; add value by indicating
-  type/direction of change and who/what is affected.
-- Use ONLY what can be inferred from the titles:
-  no invented numbers, quotes, or dates.
+--------------------------------------
+<h2>🏢 Major Players – Strategic Moves</h2>
+<div class="section">
+<ul>
+<li>Supply cuts, expansions, or inventory moves.</li>
+<li>Retail expansion, consolidation, or exits.</li>
+</ul>
+</div>
+
+--------------------------------------
+<h2>📊 Margin & Inventory Stress Signals</h2>
+<div class="section">
+<ul>
+<li>Where margins are expanding or compressing.</li>
+<li>Which segment is under stress today.</li>
+</ul>
+</div>
+
+--------------------------------------
+<h2>🔮 Forward Signals (3–12 Month View)</h2>
+<div class="section">
+<ul>
+<li>Technology, regulation, consumer behaviour shifts.</li>
+<li>Capital flows or structural changes.</li>
+</ul>
+</div>
+
+--------------------------------------
+<h2>🎯 Strategic Question of the Day</h2>
+<div class="section">
+<p>
+If a jewellery business had to make one strategic decision today,
+what should it be and why?
+</p>
+</div>
+
+--------------------------------------
+<h2>📰 Editorial Must-Read</h2>
+<div class="section">
+<ul>
+<li><b>What it is:</b> One high-signal article, interview, or report worth deep attention.</li>
+<li><b>Why it matters:</b> The strategic or economic implication for the jewellery industry.</li>
+<li><b>Key insight:</b> One non-obvious takeaway industry leaders should internalise.</li>
+</ul>
+</div>
+
+--------------------------------------
+<h2>🗣️ Industry Voice of the Day</h2>
+<div class="section">
+<ul>
+<li><b>Who:</b> The type of expert (retailer, trader, analyst, trade body).</li>
+<li><b>What they believe:</b> Their current stance or concern.</li>
+<li><b>What this signals:</b> What behaviour is likely to follow in the industry.</li>
+</ul>
+</div>
+
+--------------------------------------
+<h2>🏬 Retailer Deep Dive of the Day</h2>
+<div class="section">
+<ul>
+<li><b>Retailer profile:</b> Size, geography, target customer.</li>
+<li><b>Core strength:</b> Product, pricing, brand, or operations.</li>
+<li><b>Customer persona:</b> Who actually buys from them and why.</li>
+<li><b>Go-to-market strategy:</b> Store-led, digital-first, bridal-heavy, luxury-led.</li>
+<li><b>Competitive edge:</b> What rivals underestimate about them.</li>
+</ul>
+</div>
+
+--------------------------------------
+<h2>📦 Product & Sell-Through Intelligence</h2>
+<div class="section">
+<ul>
+<li>Fast-moving vs slow-moving categories.</li>
+<li>Inventory pressure points.</li>
+<li>Consumer trade-down or trade-up signals.</li>
+</ul>
+</div>
+
+--------------------------------------
+<h2>📐 Trend Classification</h2>
+<div class="section">
+<ul>
+<li><b>Observed trend:</b> What appears to be gaining attention.</li>
+<li><b>Classification:</b> Fad / Cyclical / Structural.</li>
+<li><b>Strategic implication:</b> Act now, watch carefully, or ignore.</li>
+</ul>
+</div>
 
 
-==============================================================
-NON-NEGOTIABLE OUTPUT RULES
-==============================================================
+====================================================
+HARD RULES
+====================================================
 
-- Use ONLY information from the input titles for news summaries.
-- You may DROP less-important headlines completely to respect
-  the 15-story and 1-story-per-theme limits.
-- Do NOT invent URLs.
-- Do NOT output numeric IDs.
-- Output must be PURE HTML.
-- Do NOT output <html>, <head>, or <body> tags.
-- The 7 value-upgrade sections at the top are MANDATORY.
+- Use ONLY information inferable from headlines.
+- Do NOT invent numbers, prices, or quotes.
+- Prefer incentives and supply-demand logic.
+- Be concise, analytical, and operator-focused.
+- No marketing language, no hype.
+- Avoid repeating the same retailer, brand, or expert within a 14-day window.
+- Retailer Deep Dive must rotate across:
+  national chains, regional players, D2C brands, luxury boutiques.
+- Sell-through insights must be inferred from incentives, pricing behaviour,
+  inventory mentions, and expansion or discounting signals.
+- Prefer uncomfortable truths over optimistic narratives.
+
 
 End of instructions.
 """
@@ -467,11 +376,12 @@ End of instructions.
     response = client.responses.create(
         model="gpt-4.1",
         input=prompt,
-        max_output_tokens=3500,
-        temperature=0.45,
+        temperature=0.35,
+        max_output_tokens=3000,
     )
 
     return response.output_text.strip()
+
 
 
 # =======================
