@@ -32,7 +32,7 @@ RSS_FEEDS = [
 ]
 
 MAX_ITEMS_PER_FEED = 10
-MAX_TOTAL_ITEMS = 35  # 🔒 HARD TPM SAFETY CAP
+MAX_TOTAL_ITEMS = 35   # 🔒 HARD TOKEN SAFETY CAP
 IST = pytz.timezone("Asia/Kolkata")
 
 DEFAULT_DIGEST_ROLE = "investor"
@@ -77,11 +77,11 @@ def fetch_news() -> List[Dict]:
             if not title:
                 continue
 
-            dedupe_key = title.lower()
-            if dedupe_key in seen_titles:
+            key = title.lower()
+            if key in seen_titles:
                 continue
 
-            seen_titles.add(dedupe_key)
+            seen_titles.add(key)
             items.append({
                 "id": idx,
                 "source": feed_title,
@@ -94,7 +94,7 @@ def fetch_news() -> List[Dict]:
 
 def build_headlines_text(items: List[Dict]) -> str:
     """
-    Token-optimized: titles + source only (NO URLs)
+    Token-efficient: titles + source only (NO URLs)
     """
     return "\n".join(
         f"{i['id']}) [{i['source']}] {i['title']}"
@@ -102,7 +102,7 @@ def build_headlines_text(items: List[Dict]) -> str:
     )
 
 # =========================================================
-# 3. OPENAI – CEO-GRADE DIGEST (FULL STRUCTURE, TPM SAFE)
+# 3. OPENAI – PROCUREMENT → CEO DIGEST
 # =========================================================
 
 def ask_ai_for_digest(headlines_text: str, digest_type: str) -> str:
@@ -122,32 +122,34 @@ def ask_ai_for_digest(headlines_text: str, digest_type: str) -> str:
     }
 
     prompt = f"""
-You are a C-suite strategic advisor to a global jewellery conglomerate.
+You are a C-suite strategic advisor mentoring a senior jewellery procurement
+and merchandising leader with CEO ambition.
 Date: {current_date}
 
 PRIMARY ROLE: {digest_type.upper()}
 Perspective: {ROLE_CONTEXT.get(digest_type, "")}
 
-India is the core market. Other regions only if they impact India.
+India is the core market.
+Other regions only if they materially impact India.
 
-HEADLINES:
+HEADLINES (signals only):
 {headlines_text}
 
 OUTPUT RULES:
-- Pure HTML only
-- Blunt, authoritative, C-suite directive
-- Framework: SIGNAL → IMPACT → COMMAND
-- End-to-end coverage (mine to showroom)
+- HTML only
+- Blunt, authoritative, decision-oriented
+- Use framework: SIGNAL → IMPACT → COMMAND
+- Think end-to-end: mine → refinery → factory → store → consumer → balance sheet
 
 SECTIONS TO COVER:
-1. 🏛️ CEO LEVEL: Macro pivots (FTAs, Trade Wars, M&A)
-2. 💰 CFO LEVEL: Bullion hedging, currency risk, GML (Gold Metal Loans)
-3. 💎 PROCUREMENT: Natural vs LGD sourcing, BIS standards, product mix (plain, stone, Polki, Kundan, color, precious, uncut)
-4. 📦 MERCHANDISING & DESIGN: GMROI, 14K vs 22K, design and consumer preference shifts
-5. 📈 SALES: Consumer psychology, converting sticker shock into investment value
-6. ⚠️ THE BLACK SWAN: One high-probability risk the market is ignoring
+1. 🏛️ CEO LEVEL – Macro pivots (FTAs, trade wars, M&A)
+2. 💰 CFO LEVEL – Bullion hedging, FX risk, GML (Gold Metal Loans)
+3. 💎 PROCUREMENT – Natural vs LGD, BIS, sourcing leverage, product mix
+4. 📦 MERCHANDISING & DESIGN – GMROI, 14K vs 22K, design & preference shifts
+5. 📈 SALES – Consumer psychology, converting sticker shock to investment value
+6. ⚠️ BLACK SWAN – One high-probability risk the market is ignoring
 
-FORMATTED HTML SECTIONS (MUST APPEAR):
+FORMATTED HTML SECTIONS (MANDATORY):
 
 <h2>🔎 Executive Snapshot</h2>
 <ul>
@@ -186,6 +188,13 @@ FORMATTED HTML SECTIONS (MUST APPEAR):
 <ul>
 <li>Fast categories.</li>
 <li>Slow inventory.</li>
+</ul>
+
+<h2>🧭 Procurement-to-CEO Lens</h2>
+<ul>
+<li>One sourcing decision that protects enterprise cash flow.</li>
+<li>One merchandising choice that improves GMROI.</li>
+<li>One risk a CEO would see that a buyer might miss.</li>
 </ul>
 
 <h2>🧠 CEO Lens</h2>
@@ -256,7 +265,7 @@ def main():
     digest_html = ask_ai_for_digest(headlines_text, DEFAULT_DIGEST_ROLE)
 
     now = datetime.now(IST).strftime("%Y-%m-%d %I:%M %p IST")
-    subject = f"Jewellery CEO Intelligence Digest – {now}"
+    subject = f"Jewellery Procurement → CEO Intelligence Digest – {now}"
 
     send_email(subject, digest_html)
 
