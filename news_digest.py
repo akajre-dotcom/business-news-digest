@@ -12,27 +12,19 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 # =========================================================
-# 1. THE SENSOR ARRAY (Global Intelligence Sources)
+# 1. THE SENSOR ARRAY
 # =========================================================
 RSS_FEEDS = [
-    # BULLION & MACRO (Price Discovery & Interest Rates)
     "https://www.gold.org/rss/news", 
     "https://news.google.com/rss/search?q=LBMA+gold+price+forecast+inflation+macroeconomics&hl=en-IN&gl=IN&ceid=IN:en",
-    
-    # DIAMONDS & GEMS (Natural vs LGD Sourcing)
     "https://rapaport.com/feed/",
     "https://news.google.com/rss/search?q=De+Beers+Alrosa+diamond+supply+chain+lab+grown+pricing&hl=en-IN&gl=IN&ceid=IN:en",
-    
-    # RETAIL & COMPETITION (India/GCC Dynamics)
     "https://www.solitaireinternational.com/feed/",
     "https://news.google.com/rss/search?q=Titan+Tanishq+Kalyan+Malabar+Jewellers+strategy&hl=en-IN&gl=IN&ceid=IN:en",
-    
-    # GLOBAL TRADE (FTA & Policy)
     "https://news.google.com/rss/search?q=India+EU+FTA+jewellery+zero+duty+impact&hl=en-IN&gl=IN&ceid=IN:en",
 ]
 
 IST = pytz.timezone("Asia/Kolkata")
-MAX_ITEMS_PER_FEED = 15
 
 # =========================================================
 # 2. DATA HARVESTING
@@ -50,10 +42,8 @@ def fetch_news() -> str:
     seen = set()
     for url in RSS_FEEDS:
         feed = feedparser.parse(url)
-        # Use recent news; fallback to last 3 entries if none are from last 24h
         recent = [e for e in feed.entries if is_recent(e)]
         use_entries = recent if recent else feed.entries[:3]
-        
         for e in use_entries:
             link = e.get("link")
             if link not in seen:
@@ -62,10 +52,9 @@ def fetch_news() -> str:
     return "\n".join(headlines)
 
 # =========================================================
-# 3. THE BRAIN: AUTONOMOUS STRATEGIST
+# 3. THE BRAIN: STRATEGIC DIRECTIVES (Fixed API)
 # =========================================================
 def generate_strategic_directives(headlines_text: str) -> str:
-    """Transforms raw news into C-Suite orders using 2026 Responses API."""
     client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
     current_date = datetime.now(IST).strftime("%B %d, %Y")
     
@@ -80,24 +69,23 @@ def generate_strategic_directives(headlines_text: str) -> str:
     OUTPUT RULES:
     - Structure: Pure HTML. 
     - Tone: Blunt, authoritative, C-Suite directive.
-    - Logic: Use [SIGNAL] -> [IMPACT] -> [COMMAND].
-    - Vertical Focus: Cover the entire flow from Mine-to-Showroom (End-to-End).
+    - Logic: [SIGNAL] -> [IMPACT] -> [COMMAND].
+    - Vertical Focus: Mine-to-Showroom.
 
-    SECTIONS TO COVER:
-    1. 🏛️ CEO LEVEL: Macro pivots (FTAs, Trade Wars, M&A).
-    2. 💰 CFO LEVEL: Bullion hedging, Currency risk, GML (Gold Metal Loans).
-    3. 💎 PROCUREMENT: Natural vs LGD sourcing strategy, BIS standards.
-    4. 📦 MERCHANDISING: Inventory turnover (GMROI), Category shifts (14K vs 22K).
-    5. 📈 SALES: Consumer psychology, converting 'Sticker Shock' into 'Investment Value'.
-    
-    6. ⚠️ THE BLACK SWAN: One high-probability risk the market is ignoring.
+    SECTIONS:
+    1. 🏛️ CEO LEVEL: Macro/FTAs.
+    2. 💰 CFO LEVEL: Hedging/GML.
+    3. 💎 PROCUREMENT: Natural/LGD Sourcing.
+    4. 📦 MERCHANDISING: Inventory Velocity.
+    5. 📈 SALES: Consumer psychology.
+    6. ⚠️ THE BLACK SWAN: One hidden risk.
     """
 
-    # Using the 2026 stable Responses API for autonomous agents
+    # FIX: Removed 'temperature' for 2026 reasoning models
     response = client.responses.create(
-        model="gpt-5", # Model fallback to gpt-4o if not available
-        input=prompt,
-        temperature=0.1
+        model="gpt-5", 
+        input=prompt
+        # reasoning_effort="high" # Optional: use for deeper analysis
     )
     return response.output[0].text.strip()
 
@@ -113,10 +101,9 @@ def send_email(html_body: str):
     
     styled_html = f"""
     <div style="font-family: 'Times New Roman', serif; color: #1a1a1a; padding: 25px; border: 3px double #C5A059; max-width: 900px; margin: auto;">
-        <h1 style="text-align: center; color: #8C6A3B; letter-spacing: 2px; border-bottom: 1px solid #C5A059;">SOVEREIGN STRATEGY</h1>
+        <h1 style="text-align: center; color: #8C6A3B; border-bottom: 1px solid #C5A059;">SOVEREIGN STRATEGY</h1>
         {html_body}
-        <hr style="border: 0; border-top: 1px solid #eee; margin-top: 40px;">
-        <p style="font-size: 11px; color: #999;">CONFIDENTIAL. Generated via Autonomous Sovereign Hub.</p>
+        <p style="font-size: 11px; color: #999; margin-top: 40px;">CONFIDENTIAL. Generated via Autonomous Sovereign Hub.</p>
     </div>
     """
     msg.attach(MIMEText(styled_html, "html"))
@@ -137,7 +124,7 @@ if __name__ == "__main__":
             send_email(digest)
             print("Intelligence dispatched successfully.")
         else:
-            print("No new signals today.")
+            print("No significant signals detected today.")
     except Exception as e:
         print(f"Deployment Error: {e}")
         exit(1)
