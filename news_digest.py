@@ -46,7 +46,13 @@ RSS_FEEDS = [
 
     "https://news.google.com/rss/search?q=central+bank+gold+buying&hl=en-IN&gl=IN&ceid=IN:en",
 
-
+    "https://www.gold.org/rss/news", 
+    "https://news.google.com/rss/search?q=LBMA+gold+price+forecast+inflation+macroeconomics&hl=en-IN&gl=IN&ceid=IN:en",
+    "https://rapaport.com/feed/",
+    "https://news.google.com/rss/search?q=De+Beers+Alrosa+diamond+supply+chain+lab+grown+pricing&hl=en-IN&gl=IN&ceid=IN:en",
+    "https://www.solitaireinternational.com/feed/",
+    "https://news.google.com/rss/search?q=Titan+Tanishq+Kalyan+Malabar+Jewellers+strategy&hl=en-IN&gl=IN&ceid=IN:en",
+    "https://news.google.com/rss/search?q=India+EU+FTA+jewellery+zero+duty+impact&hl=en-IN&gl=IN&ceid=IN:en",
 
     # Diamonds
 
