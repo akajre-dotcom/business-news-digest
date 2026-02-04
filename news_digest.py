@@ -12,64 +12,68 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 # =========================================================
+# 0. TOP-LEVEL MASTER INSTRUCTION (NON-NEGOTIABLE)
+# =========================================================
+
+TOP_LEVEL_INSTRUCTION = """
+You are not a summarizer.
+
+You are a master of the global jewellery industry with deep, lived understanding of:
+– Gold, silver, diamonds (natural, polki, uncut, LGD)
+– Indian and global manufacturing systems
+– Karigar workflows, failure points, and skill economics
+– Trade margins, making charges, wastage logic, and pricing psychology
+– Retail behaviour across India, Middle East, US, and Europe
+– Luxury, heritage, and high jewellery storytelling
+
+Your task is to turn raw market news, trade data, and craft references into
+elite-level jewellery intelligence that teaches mastery.
+
+For every output:
+– Assume the reader wants to become a lifelong expert
+– Explain WHY things are made the way they are, not just WHAT happened
+– Translate news into manufacturing, margin, and design consequences
+– Reveal hidden mechanics only insiders know
+– Never write generic content or textbook definitions
+– Never praise brands or marketing language
+– Be precise, factual, and experience-driven
+
+Your output should make a serious reader capable of:
+– Judging jewellery quality on sight
+– Understanding pricing without being told
+– Describing beauty, craft, and value with authority
+– Thinking like a procurement head today and a CEO tomorrow
+
+If a detail is uncertain, explain the uncertainty.
+If a practice is inefficient, say why.
+If a craft is dying, explain what replaces it.
+If something makes money, explain EXACTLY how.
+
+Write so that repeated daily reading compounds into true mastery of the jewellery industry.
+"""
+
+# =========================================================
 # 1. CONFIG
 # =========================================================
 
-# =========================================================
-# MASTER RSS FEEDS – GLOBAL TRADE (INDIA-RELEVANT)
-# =========================================================
-
 RSS_FEEDS = [
-
-    # -----------------------------------------------------
-    # 1. GLOBAL & TRADE AUTHORITIES (PRICE + PIPELINE)
-    # -----------------------------------------------------
-    "https://www.gold.org/rss/news",              # Global gold flows, policy
-    "https://rapaport.com/feed/",                 # Diamond pricing & sentiment
-    "https://www.solitaireinternational.com/feed/",  # India + global diamond trade
-
-    # -----------------------------------------------------
-    # 2. INDIA JEWELLERY MARKET – MASTER SIGNAL
-    # (Catches ALL brands, regions, family jewellers)
-    # -----------------------------------------------------
+    "https://www.gold.org/rss/news",
+    "https://rapaport.com/feed/",
+    "https://www.solitaireinternational.com/feed/",
     "https://news.google.com/rss/search?q=India+jewellery+market&hl=en-IN&gl=IN&ceid=IN:en",
-
-    # -----------------------------------------------------
-    # 3. CORPORATE, POLICY & REGULATORY EVENTS
-    # (IPO, GST, raids, compliance, funding)
-    # -----------------------------------------------------
     "https://news.google.com/rss/search?q=jewellery+company+India+policy&hl=en-IN&gl=IN&ceid=IN:en",
-
-    # -----------------------------------------------------
-    # 4. RETAIL & STORE EXPANSION / CONSOLIDATION
-    # -----------------------------------------------------
     "https://news.google.com/rss/search?q=jewellery+retail+store+India&hl=en-IN&gl=IN&ceid=IN:en",
-
-    # -----------------------------------------------------
-    # 5. MANUFACTURING, CRAFT & SOURCING (LEARNING ENGINE)
-    # -----------------------------------------------------
     "https://news.google.com/rss/search?q=jewellery+manufacturing+India+craft&hl=en-IN&gl=IN&ceid=IN:en",
-
-    # -----------------------------------------------------
-    # 6. PRODUCT, DESIGN & HANDMADE LANGUAGE
-    # -----------------------------------------------------
     "https://news.google.com/rss/search?q=handmade+gold+jewellery+India+design&hl=en-IN&gl=IN&ceid=IN:en",
-
-    # -----------------------------------------------------
-    # 7. DIAMONDS, POLKI, LGD (FULL PIPELINE)
-    # -----------------------------------------------------
     "https://news.google.com/rss/search?q=diamond+polki+lab+grown+jewellery+India&hl=en-IN&gl=IN&ceid=IN:en",
 ]
 
-# ---------------------------------------------------------
-# SAFETY LIMITS (KEEP AS-IS)
-# ---------------------------------------------------------
 MAX_ITEMS_PER_FEED = 8
 MAX_TOTAL_ITEMS = 30
 IST = pytz.timezone("Asia/Kolkata")
 
 # =========================================================
-# 2. TARGET BRAND KEYWORDS (NEWS MATCHING ONLY)
+# 2. TARGET BRAND KEYWORDS (NORMALIZED)
 # =========================================================
 
 TARGET_BRANDS = {
@@ -128,7 +132,6 @@ TARGET_BRANDS = {
     "Salty": ["salty jewellery"]
 }
 
-
 # =========================================================
 # 3. HELPERS
 # =========================================================
@@ -136,29 +139,22 @@ TARGET_BRANDS = {
 def is_recent(entry) -> bool:
     now = datetime.now(IST)
     dt = None
-    if hasattr(entry, "published_parsed") and entry.published_parsed:
+    if entry.get("published_parsed"):
         dt = datetime.fromtimestamp(time.mktime(entry.published_parsed), IST)
-    elif hasattr(entry, "updated_parsed") and entry.updated_parsed:
+    elif entry.get("updated_parsed"):
         dt = datetime.fromtimestamp(time.mktime(entry.updated_parsed), IST)
-    if not dt:
-        return False
-    return (now - dt) <= timedelta(hours=24)
+    return dt and (now - dt) <= timedelta(hours=24)
 
 
 def fetch_news() -> List[Dict]:
-    items = []
-    seen = set()
-    idx = 1
+    items, seen, idx = [], set(), 1
 
     for feed_url in RSS_FEEDS:
         feed = feedparser.parse(feed_url)
-        source = feed.feed.get("title", feed_url)
+        source = feed.feed.get("title", "Unknown Source")
         entries = feed.entries[:MAX_ITEMS_PER_FEED]
 
-        recent = [e for e in entries if is_recent(e)]
-        use_entries = recent if recent else entries
-
-        for e in use_entries:
+        for e in entries:
             if len(items) >= MAX_TOTAL_ITEMS:
                 return items
 
@@ -169,10 +165,9 @@ def fetch_news() -> List[Dict]:
             if not title or not link:
                 continue
 
-            key = title.lower()
-            if key in seen:
+            if title.lower() in seen:
                 continue
-            seen.add(key)
+            seen.add(title.lower())
 
             items.append({
                 "id": idx,
@@ -187,28 +182,19 @@ def fetch_news() -> List[Dict]:
 
 
 def detect_brand_news(items: List[Dict]) -> Dict[str, List[Dict]]:
-    brand_hits = {}
+    hits = {}
 
     for item in items:
         text = f"{item['title']} {item['summary']}".lower()
-
         for brand, keywords in TARGET_BRANDS.items():
-            for kw in keywords:
-                if kw in text:
-                    brand_hits.setdefault(brand, [])
-                    brand_hits[brand].append({
-                        "title": item["title"],
-                        "link": item["link"]
-                    })
-                    break
-
-    return brand_hits
-
+            if any(k in text for k in keywords):
+                hits.setdefault(brand, []).append(item)
+    return hits
 
 
 def build_headlines_text(items: List[Dict]) -> str:
     return "\n".join(
-        f"{i['id']}) [{i['source']}] {i['title']}"
+        f"{i['id']}) <a href='{i['link']}'>{i['title']}</a>"
         for i in items
     )
 
@@ -217,7 +203,7 @@ def pick_editorial(items: List[Dict]) -> Dict:
     return items[0]
 
 # =========================================================
-# 4. OPENAI – CEO INTELLIGENCE + DAILY CRAFT LEARNING
+# 4. OPENAI – INLINE LINK ENFORCED
 # =========================================================
 
 def ask_ai_for_digest(headlines_text: str, editorial: Dict, brand_news: Dict) -> str:
@@ -226,86 +212,49 @@ def ask_ai_for_digest(headlines_text: str, editorial: Dict, brand_news: Dict) ->
 
     brand_context = ""
     for brand, articles in brand_news.items():
-        brand_context += f"\n{brand}:\n"
         for a in articles:
-            brand_context += f"- {a['title']} ({a['link']})\n"
+            brand_context += (
+                f"- {brand}: "
+                f"<a href='{a['link']}'>{a['title']}</a>\n"
+            )
 
     prompt = f"""
-You are mentoring a senior jewellery procurement & merchandising leader
-being trained for CEO responsibility.
+{TOP_LEVEL_INSTRUCTION}
 
 Date: {today}
 India is the core market.
 
-HEADLINES:
+HEADLINES (ALL CLICKABLE):
 {headlines_text}
 
-EDITORIAL MUST-READ ARTICLE:
-Title: {editorial['title']}
-Link: {editorial['link']}
+EDITORIAL MUST-READ:
+<a href="{editorial['link']}">{editorial['title']}</a>
 
-BRAND-SPECIFIC MARKET NEWS (FACTUAL ONLY):
-{brand_context if brand_context else "No brand-specific corporate news detected today."}
+BRAND-SPECIFIC MARKET SIGNALS:
+{brand_context if brand_context else "No brand-specific corporate developments today."}
 
-OUTPUT RULES:
+STRICT OUTPUT RULES:
 - HTML only
-- Blunt, practical, decision-oriented
-- SIGNAL → IMPACT → COMMAND
-- Long-form intelligence is encouraged
-- Mention brands ONLY if listed above
-- Cite article links when referencing brands
+- NO separate link lines
+- NO reference sections
+- ALL sources must be embedded as clickable text or headings
+- Every cited fact must be naturally clickable
+- Write like a master jeweller teaching an apprentice
 
 MANDATORY SECTIONS:
 
 <h2>🔎 Executive Snapshot</h2>
-
 <h2>🌍 Macro & Policy Drivers</h2>
-
 <h2>🪙 Gold & Silver Reality</h2>
-
 <h2>💎 Diamonds & Polki Pipeline</h2>
-
 <h2>🇮🇳 India Demand Reality</h2>
-
 <h2>📦 What Is Selling vs What Is Stuck</h2>
 
 <h2>🧵 Product & Craft Intelligence (Daily Craft Learning)</h2>
-
-Each day, pick 1–2 jewellery product styles or crafts
-(even if not in today’s news) and TEACH them deeply.
-
-For EACH product, cover EXACTLY in this order:
-
-<b>1. What It Is (Visual & Emotional Description)</b><br>
-Describe how it looks, feels, and why customers find it beautiful.
-Explain how a salesperson should describe it.
-
-<b>2. How It Is Made (Step-by-Step)</b><br>
-Explain the manufacturing process from raw metal to finished piece.
-
-<b>3. Type of Workmanship</b><br>
-Handmade / die-stamp / casting / mixed.
-
-<b>4. Making Charges (Reality)</b><br>
-Approximate making charge range.
-Differentiate karigar cost vs retail billing logic.
-
-<b>5. Margin Logic</b><br>
-Where margin really comes from.
-
-<b>6. Risk & Sourcing Complexity</b><br>
-Skill dependency, repair risk, scalability.
-
-<b>7. Who Buys This & When</b><br>
-Region, occasion, buyer mindset.
-
-<b>8. One Line of Craft Wisdom</b><br>
-A sentence that proves mastery.
+Teach 1–2 products deeply using visual language, process, margin, risk, buyer, and craft wisdom.
 
 <h2>📰 Editorial Must-Read</h2>
-
 <h2>🎯 Strategic Question of the Day</h2>
-
 <h2>🧠 Procurement → CEO Lens</h2>
 """
 
@@ -330,9 +279,8 @@ def send_email(subject: str, html: str):
 
     msg.attach(MIMEText(html, "html"))
 
-    context = ssl.create_default_context()
     with smtplib.SMTP(os.environ["SMTP_SERVER"], int(os.environ.get("SMTP_PORT", 587))) as server:
-        server.starttls(context=context)
+        server.starttls(context=ssl.create_default_context())
         server.login(os.environ["SMTP_USERNAME"], os.environ["SMTP_PASSWORD"])
         server.send_message(msg)
 
@@ -343,18 +291,14 @@ def send_email(subject: str, html: str):
 def main():
     news = fetch_news()
     if not news:
-        send_email("Jewellery Digest", "<p>No material news today.</p>")
+        send_email("Jewellery Intelligence", "<p>No material jewellery news today.</p>")
         return
 
     brand_news = detect_brand_news(news)
     editorial = pick_editorial(news)
     headlines_text = build_headlines_text(news)
 
-    digest = ask_ai_for_digest(
-        headlines_text=headlines_text,
-        editorial=editorial,
-        brand_news=brand_news
-    )
+    digest = ask_ai_for_digest(headlines_text, editorial, brand_news)
 
     subject = f"Jewellery Procurement → CEO Intelligence | {datetime.now(IST).strftime('%d %b %Y')}"
     send_email(subject, digest)
