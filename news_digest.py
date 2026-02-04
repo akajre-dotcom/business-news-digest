@@ -10,49 +10,127 @@ import pytz
 from openai import OpenAI
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from email.utils import make_msgid   # ✅ added
 
 # =========================================================
-# 1. ENHANCED CONFIG & BRAND TRACKING
+# 1. CONFIG
 # =========================================================
 
-TARGET_BRANDS = [
-    "Tanishq", "Titan", "Kalyan Jewellers", "Malabar Gold & Diamonds", 
-    "Joyalukkas", "PC Jeweller", "Reliance Jewels", "Senco Gold & Diamonds", 
-    "GRT Jewellers", "Bhima", "Khazana", "Lalitha Jewellery", 
-    "Vummidi Bangaru", "VBJ", "Prince", "Thangamayil", "Jos Alukkas", 
-    "Tribhovandas Bhimji Zaveri", "TBZ", "P.N. Gadgil", "PNG", 
-    "Waman Hari Pethe", "WHP", "Chandukaka Saraf", "Chintamani's", 
-    "P.C. Chandra Jewellers", "Anjali Jewellers", "Sawansukha", 
-    "Chandrani Pearls", "Khanna Jewellers", "Mehra Brothers", "Liali", 
-    "Punjab Jewellers", "Zoya", "Hazoorilal Legacy", "Sabyasachi Fine Jewellery", 
-    "C. Krishniah Chetty", "CKC", "Amrapali Jewels", "Birdhichand Ghanshyamdas", 
-    "Kantilal Chhotalal", "CaratLane", "BlueStone", "Mia by Tanishq", 
-    "Melorra", "GIVA", "Palmonas", "Limelight Diamonds", "Jewelbox", 
-    "Fiona Diamonds", "Avtaara", "Ivana", "Kushal’s Fashion Jewellery", 
-    "Rubans", "Isharya", "Outhouse", "Zaveri Pearls", "Salty"
-]
+# =========================================================
+# MASTER RSS FEEDS – GLOBAL TRADE (INDIA-RELEVANT)
+# =========================================================
 
 RSS_FEEDS = [
-    "https://www.jckonline.com/feed/",
-    "https://www.nationaljeweller.com/rss",
-    "https://www.professionaljeweller.com/feed/",
-    "https://www.voguebusiness.com/feed/companies/jewellery",
-    "https://www.gold.org/rss/news",
-    "https://www.solitaireinternational.com/feed/",
-    "https://gjepc.org/news_rss.php",
-    "https://news.google.com/rss/search?q=Titan+Company+Tanishq+jewellery+news&hl=en-IN&gl=IN&ceid=IN:en",
-    "https://news.google.com/rss/search?q=Kalyan+Jewellers+Malabar+Gold+industry&hl=en-IN&gl=IN&ceid=IN:en",
-    "https://news.google.com/rss/search?q=Palmonas+GIVA+demi-fine+jewellery&hl=en-IN&gl=IN&ceid=IN:en",
-    "https://news.google.com/rss/search?q=LVMH+Tiffany+Richemont+strategy+jewellery&hl=en-US&gl=US&ceid=US:en",
+
+    # -----------------------------------------------------
+    # 1. GLOBAL & TRADE AUTHORITIES (PRICE + PIPELINE)
+    # -----------------------------------------------------
+    "https://www.gold.org/rss/news",              # Global gold flows, policy
+    "https://rapaport.com/feed/",                 # Diamond pricing & sentiment
+    "https://www.solitaireinternational.com/feed/",  # India + global diamond trade
+
+    # -----------------------------------------------------
+    # 2. INDIA JEWELLERY MARKET – MASTER SIGNAL
+    # (Catches ALL brands, regions, family jewellers)
+    # -----------------------------------------------------
+    "https://news.google.com/rss/search?q=India+jewellery+market&hl=en-IN&gl=IN&ceid=IN:en",
+
+    # -----------------------------------------------------
+    # 3. CORPORATE, POLICY & REGULATORY EVENTS
+    # (IPO, GST, raids, compliance, funding)
+    # -----------------------------------------------------
+    "https://news.google.com/rss/search?q=jewellery+company+India+policy&hl=en-IN&gl=IN&ceid=IN:en",
+
+    # -----------------------------------------------------
+    # 4. RETAIL & STORE EXPANSION / CONSOLIDATION
+    # -----------------------------------------------------
+    "https://news.google.com/rss/search?q=jewellery+retail+store+India&hl=en-IN&gl=IN&ceid=IN:en",
+
+    # -----------------------------------------------------
+    # 5. MANUFACTURING, CRAFT & SOURCING (LEARNING ENGINE)
+    # -----------------------------------------------------
+    "https://news.google.com/rss/search?q=jewellery+manufacturing+India+craft&hl=en-IN&gl=IN&ceid=IN:en",
+
+    # -----------------------------------------------------
+    # 6. PRODUCT, DESIGN & HANDMADE LANGUAGE
+    # -----------------------------------------------------
+    "https://news.google.com/rss/search?q=handmade+gold+jewellery+India+design&hl=en-IN&gl=IN&ceid=IN:en",
+
+    # -----------------------------------------------------
+    # 7. DIAMONDS, POLKI, LGD (FULL PIPELINE)
+    # -----------------------------------------------------
+    "https://news.google.com/rss/search?q=diamond+polki+lab+grown+jewellery+India&hl=en-IN&gl=IN&ceid=IN:en",
 ]
 
-MAX_ITEMS_PER_FEED = 10
-MAX_TOTAL_ITEMS = 40
+# ---------------------------------------------------------
+# SAFETY LIMITS (KEEP AS-IS)
+# ---------------------------------------------------------
+MAX_ITEMS_PER_FEED = 8
+MAX_TOTAL_ITEMS = 30
 IST = pytz.timezone("Asia/Kolkata")
 
 # =========================================================
-# 2. INTELLIGENT FETCHING
+# 2. TARGET BRAND KEYWORDS (NEWS MATCHING ONLY)
+# =========================================================
+
+TARGET_BRANDS = {
+    "Tanishq": ["tanishq"],
+    "Titan": ["titan"],
+    "Kalyan Jewellers": ["kalyan jewellers", "kalyan jewellery"],
+    "Malabar Gold & Diamonds": ["malabar gold", "malabar jewellery"],
+    "Joyalukkas": ["joyalukkas"],
+    "PC Jeweller": ["pc jeweller", "pcjeweller"],
+    "Reliance Jewels": ["reliance jewels"],
+    "Senco Gold & Diamonds": ["senco gold", "senco jewellery"],
+    "GRT Jewellers": ["grt jewellers", "grt"],
+    "Bhima": ["bhima jewellers", "bhima gold"],
+    "Khazana": ["khazana jewellery"],
+    "Lalitha Jewellery": ["lalitha jewellery"],
+    "Vummidi Bangaru": ["vummidi bangaru", "vbj"],
+    "Prince": ["prince jewellers"],
+    "Thangamayil": ["thangamayil"],
+    "Jos Alukkas": ["jos alukkas"],
+    "Tribhovandas Bhimji Zaveri": ["tribhovandas bhimji zaveri", "tbz"],
+    "P.N. Gadgil": ["p.n. gadgil", "pn gadgil", "png jewellers"],
+    "Waman Hari Pethe": ["waman hari pethe", "whp"],
+    "Chandukaka Saraf": ["chandukaka saraf"],
+    "Chintamani's": ["chintamani jewellers"],
+    "P.C. Chandra Jewellers": ["pc chandra jewellers"],
+    "Anjali Jewellers": ["anjali jewellers"],
+    "Sawansukha": ["sawansukha jewellers"],
+    "Chandrani Pearls": ["chandrani pearls"],
+    "Khanna Jewellers": ["khanna jewellers"],
+    "Mehra Brothers": ["mehra brothers"],
+    "Liali": ["liali jewellery"],
+    "Punjab Jewellers": ["punjab jewellers"],
+    "Zoya": ["zoya jewellery"],
+    "Hazoorilal Legacy": ["hazoorilal"],
+    "Sabyasachi Fine Jewellery": ["sabyasachi jewellery"],
+    "C. Krishniah Chetty": ["c krishniah chetty", "ckc"],
+    "Amrapali Jewels": ["amrapali jewels"],
+    "Birdhichand Ghanshyamdas": ["birdhichand ghanshyamdas"],
+    "Kantilal Chhotalal": ["kantilal chhotalal"],
+    "CaratLane": ["caratlane"],
+    "BlueStone": ["bluestone"],
+    "Mia by Tanishq": ["mia by tanishq", "mia jewellery"],
+    "Melorra": ["melorra"],
+    "GIVA": ["giva jewellery"],
+    "Palmonas": ["palmonas"],
+    "Limelight Diamonds": ["limelight diamonds"],
+    "Jewelbox": ["jewelbox jewellery"],
+    "Fiona Diamonds": ["fiona diamonds"],
+    "Avtaara": ["avtaara jewellery"],
+    "Ivana": ["ivana jewellery"],
+    "Kushal’s Fashion Jewellery": ["kushals jewellery", "kushal fashion jewellery"],
+    "Rubans": ["rubans jewellery"],
+    "Isharya": ["isharya jewellery"],
+    "Outhouse": ["outhouse jewellery"],
+    "Zaveri Pearls": ["zaveri pearls"],
+    "Salty": ["salty jewellery"]
+}
+
+
+# =========================================================
+# 3. HELPERS
 # =========================================================
 
 def is_recent(entry) -> bool:
@@ -64,7 +142,8 @@ def is_recent(entry) -> bool:
         dt = datetime.fromtimestamp(time.mktime(entry.updated_parsed), IST)
     if not dt:
         return False
-    return (now - dt) <= timedelta(hours=36)
+    return (now - dt) <= timedelta(hours=24)
+
 
 def fetch_news() -> List[Dict]:
     items = []
@@ -73,75 +152,174 @@ def fetch_news() -> List[Dict]:
 
     for feed_url in RSS_FEEDS:
         feed = feedparser.parse(feed_url)
-        source = feed.feed.get("title", "Industry Report")
+        source = feed.feed.get("title", feed_url)
         entries = feed.entries[:MAX_ITEMS_PER_FEED]
 
-        for e in entries:
-            if not is_recent(e):
-                continue
+        recent = [e for e in entries if is_recent(e)]
+        use_entries = recent if recent else entries
+
+        for e in use_entries:
+            if len(items) >= MAX_TOTAL_ITEMS:
+                return items
 
             title = (e.get("title") or "").strip()
             link = (e.get("link") or "").strip()
-            if not title or not link or title.lower() in seen:
+            summary = (e.get("summary") or "").strip()
+
+            if not title or not link:
                 continue
 
-            priority = 0
-            for brand in TARGET_BRANDS:
-                if brand.lower() in title.lower():
-                    priority = 1
-                    break
+            key = title.lower()
+            if key in seen:
+                continue
+            seen.add(key)
 
             items.append({
                 "id": idx,
                 "source": source,
                 "title": title,
-                "link": link,
-                "priority": priority
+                "summary": summary,
+                "link": link
             })
-            seen.add(title.lower())
             idx += 1
 
-    return sorted(items, key=lambda x: x["priority"], reverse=True)[:MAX_TOTAL_ITEMS]
+    return items
+
+
+def detect_brand_news(items: List[Dict]) -> Dict[str, List[Dict]]:
+    brand_hits = {}
+
+    for item in items:
+        text = f"{item['title']} {item['summary']}".lower()
+
+        for brand, keywords in TARGET_BRANDS.items():
+            for kw in keywords:
+                if kw in text:
+                    brand_hits.setdefault(brand, [])
+                    brand_hits[brand].append({
+                        "title": item["title"],
+                        "link": item["link"]
+                    })
+                    break
+
+    return brand_hits
+
+
 
 def build_headlines_text(items: List[Dict]) -> str:
     return "\n".join(
-        [f"{' [PRIORITY]' if i['priority'] else ''} {i['source']}: {i['title']}" for i in items]
+        f"{i['id']}) [{i['source']}] {i['title']}"
+        for i in items
     )
 
+
+def pick_editorial(items: List[Dict]) -> Dict:
+    return items[0]
+
 # =========================================================
-# 3. AI DIGEST (UNCHANGED)
+# 4. OPENAI – CEO INTELLIGENCE + DAILY CRAFT LEARNING
 # =========================================================
 
-def ask_ai_for_digest(headlines_text: str, items: List[Dict]) -> str:
+def ask_ai_for_digest(headlines_text: str, editorial: Dict, brand_news: Dict) -> str:
     client = OpenAI()
-    today = datetime.now(IST).strftime("%B %d, %Y")
+    today = datetime.now(IST).strftime("%Y-%m-%d")
+
+    brand_context = ""
+    for brand, articles in brand_news.items():
+        brand_context += f"\n{brand}:\n"
+        for a in articles:
+            brand_context += f"- {a['title']} ({a['link']})\n"
 
     prompt = f"""
-You are the Chief Strategy Officer for a multi-billion dollar jewellery conglomerate.
-Your audience is the CEO and the Board of Directors.
+You are mentoring a senior jewellery procurement & merchandising leader
+being trained for CEO responsibility.
 
 Date: {today}
+India is the core market.
 
-INPUT HEADLINES:
+HEADLINES:
 {headlines_text}
 
-Generate a premium intelligence briefing in HTML.
+EDITORIAL MUST-READ ARTICLE:
+Title: {editorial['title']}
+Link: {editorial['link']}
+
+BRAND-SPECIFIC MARKET NEWS (FACTUAL ONLY):
+{brand_context if brand_context else "No brand-specific corporate news detected today."}
+
+OUTPUT RULES:
+- HTML only
+- Blunt, practical, decision-oriented
+- SIGNAL → IMPACT → COMMAND
+- Long-form intelligence is encouraged
+- Mention brands ONLY if listed above
+- Cite article links when referencing brands
+
+MANDATORY SECTIONS:
+
+<h2>🔎 Executive Snapshot</h2>
+
+<h2>🌍 Macro & Policy Drivers</h2>
+
+<h2>🪙 Gold & Silver Reality</h2>
+
+<h2>💎 Diamonds & Polki Pipeline</h2>
+
+<h2>🇮🇳 India Demand Reality</h2>
+
+<h2>📦 What Is Selling vs What Is Stuck</h2>
+
+<h2>🧵 Product & Craft Intelligence (Daily Craft Learning)</h2>
+
+Each day, pick 1–2 jewellery product styles or crafts
+(even if not in today’s news) and TEACH them deeply.
+
+For EACH product, cover EXACTLY in this order:
+
+<b>1. What It Is (Visual & Emotional Description)</b><br>
+Describe how it looks, feels, and why customers find it beautiful.
+Explain how a salesperson should describe it.
+
+<b>2. How It Is Made (Step-by-Step)</b><br>
+Explain the manufacturing process from raw metal to finished piece.
+
+<b>3. Type of Workmanship</b><br>
+Handmade / die-stamp / casting / mixed.
+
+<b>4. Making Charges (Reality)</b><br>
+Approximate making charge range.
+Differentiate karigar cost vs retail billing logic.
+
+<b>5. Margin Logic</b><br>
+Where margin really comes from.
+
+<b>6. Risk & Sourcing Complexity</b><br>
+Skill dependency, repair risk, scalability.
+
+<b>7. Who Buys This & When</b><br>
+Region, occasion, buyer mindset.
+
+<b>8. One Line of Craft Wisdom</b><br>
+A sentence that proves mastery.
+
+<h2>📰 Editorial Must-Read</h2>
+
+<h2>🎯 Strategic Question of the Day</h2>
+
+<h2>🧠 Procurement → CEO Lens</h2>
 """
 
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[
-            {"role": "system", "content": "You are a professional luxury industry consultant."},
-            {"role": "user", "content": prompt},
-        ],
-        temperature=0.2,
-        max_tokens=2500,
+    response = client.responses.create(
+        model="gpt-4.1",
+        input=prompt,
+        temperature=0.35,
+        max_output_tokens=1900
     )
 
-    return response.choices[0].message.content
+    return response.output_text.strip()
 
 # =========================================================
-# 4. EMAIL (ONLY FIXED PART)
+# 5. EMAIL
 # =========================================================
 
 def send_email(subject: str, html: str):
@@ -149,32 +327,8 @@ def send_email(subject: str, html: str):
     msg["From"] = os.environ["EMAIL_FROM"]
     msg["To"] = os.environ["EMAIL_TO"]
     msg["Subject"] = subject
-    msg["Message-ID"] = make_msgid()   # ✅ added
 
-    # ✅ REQUIRED PLAIN-TEXT PART (CRITICAL)
-    text_fallback = (
-        "Jewellery Executive Intelligence\n\n"
-        "This briefing is designed for HTML-capable email clients."
-    )
-
-    msg.attach(MIMEText(text_fallback, "plain"))
-
-    styled_html = f"""
-    <html>
-        <body style="font-family: 'Georgia', serif; line-height: 1.6; color: #333; max-width: 800px; margin: auto; padding: 20px; border: 1px solid #eee;">
-            <div style="text-align: center; border-bottom: 2px solid #b8860b; padding-bottom: 10px; margin-bottom: 20px;">
-                <h1 style="color: #b8860b; margin-bottom: 0;">JEWELLERY EXECUTIVE INTELLIGENCE</h1>
-                <p style="text-transform: uppercase; letter-spacing: 2px; font-size: 12px;">Confidential Strategy Briefing</p>
-            </div>
-            {html}
-            <div style="margin-top: 40px; font-size: 10px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 20px;">
-                Generated for Private Circulation.
-            </div>
-        </body>
-    </html>
-    """
-
-    msg.attach(MIMEText(styled_html, "html"))
+    msg.attach(MIMEText(html, "html"))
 
     context = ssl.create_default_context()
     with smtplib.SMTP(os.environ["SMTP_SERVER"], int(os.environ.get("SMTP_PORT", 587))) as server:
@@ -183,23 +337,28 @@ def send_email(subject: str, html: str):
         server.send_message(msg)
 
 # =========================================================
-# 5. MAIN
+# 6. MAIN
 # =========================================================
 
 def main():
-    print("Fetching industry intelligence...")
     news = fetch_news()
     if not news:
-        print("No material news found.")
+        send_email("Jewellery Digest", "<p>No material news today.</p>")
         return
 
-    print(f"Analyzing {len(news)} reports...")
-    digest = ask_ai_for_digest(build_headlines_text(news), news)
+    brand_news = detect_brand_news(news)
+    editorial = pick_editorial(news)
+    headlines_text = build_headlines_text(news)
 
-    # ❌ emoji removed from SUBJECT ONLY
-    subject = f"CEO Intelligence | {datetime.now(IST).strftime('%d %b %Y')} | Market Strategy"
+    digest = ask_ai_for_digest(
+        headlines_text=headlines_text,
+        editorial=editorial,
+        brand_news=brand_news
+    )
+
+    subject = f"Jewellery Procurement → CEO Intelligence | {datetime.now(IST).strftime('%d %b %Y')}"
     send_email(subject, digest)
-    print("Strategic digest sent successfully.")
+
 
 if __name__ == "__main__":
     main()
