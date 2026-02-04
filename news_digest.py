@@ -214,9 +214,10 @@ def ask_ai_for_digest(headlines_text: str, editorial: Dict, brand_news: Dict) ->
     for brand, articles in brand_news.items():
         for a in articles:
             brand_context += (
-                f"- {brand}: "
-                f"<a href='{a['link']}'>{a['title']}</a>\n"
+                f"{brand} featured in "
+                f"<a href='{a['link']}'>{a['title']}</a>. "
             )
+
 
     prompt = f"""
 {TOP_LEVEL_INSTRUCTION}
@@ -240,6 +241,11 @@ STRICT OUTPUT RULES:
 - ALL sources must be embedded as clickable text or headings
 - Every cited fact must be naturally clickable
 - Write like a master jeweller teaching an apprentice
+- Never begin a line or paragraph with a hyperlink or dash
+- Links must be embedded mid-sentence, never at the end
+
+
+
 
 MANDATORY SECTIONS:
 
@@ -256,6 +262,12 @@ Teach 1–2 products deeply using visual language, process, margin, risk, buyer,
 <h2>📰 Editorial Must-Read</h2>
 <h2>🎯 Strategic Question of the Day</h2>
 <h2>🧠 Procurement → CEO Lens</h2>
+
+IMPORTANT:
+You MUST complete EVERY section listed above.
+Do NOT stop early.
+Do NOT summarize multiple sections together.
+End the response only after completing <h2>🧠 Procurement → CEO Lens</h2>.
 """
 
     response = client.responses.create(
@@ -277,7 +289,25 @@ def send_email(subject: str, html: str):
     msg["To"] = os.environ["EMAIL_TO"]
     msg["Subject"] = subject
 
-    msg.attach(MIMEText(html, "html"))
+    full_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <meta charset="UTF-8">
+    <style>
+    body {{ font-family: Arial, sans-serif; line-height: 1.45; }}
+    h2 {{ margin-top: 24px; }}
+    p {{ margin: 8px 0; }}
+    </style>
+    </head>
+    <body>
+    {html}
+    </body>
+    </html>
+    """
+    
+    msg.attach(MIMEText(full_html, "html"))
+
 
     with smtplib.SMTP(os.environ["SMTP_SERVER"], int(os.environ.get("SMTP_PORT", 587))) as server:
         server.starttls(context=ssl.create_default_context())
