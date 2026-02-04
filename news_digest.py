@@ -12,26 +12,42 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 # =========================================================
-# 1. CONFIG
+# 1. ENHANCED CONFIG & BRAND TRACKING
 # =========================================================
 
-RSS_FEEDS = [
-    "https://www.gold.org/rss/news",
-    "https://rapaport.com/feed/",
-    "https://www.solitaireinternational.com/feed/",
-    "https://news.google.com/rss/search?q=India+jewellery+gold+diamond&hl=en-IN&gl=IN&ceid=IN:en",
-    "https://news.google.com/rss/search?q=GJEPC+jewellery+export+India&hl=en-IN&gl=IN&ceid=IN:en",
+# Focus Brands for specific monitoring
+TARGET_BRANDS = [
+    "Titan", "Tanishq", "Kalyan Jewellers", "Malabar Gold", "Kisna", 
+    "PC Jeweller", "PNG Jewellers", "Palmonas", "CaratLane", "BlueStone",
+    "LVMH", "Tiffany", "Cartier", "Bulgari", "Richemont"
 ]
 
-MAX_ITEMS_PER_FEED = 8
-MAX_TOTAL_ITEMS = 30   # TPM-safe
+RSS_FEEDS = [
+    # Global Luxury & Industry Authority
+    "https://www.jckonline.com/feed/",
+    "https://www.nationaljeweller.com/rss",
+    "https://www.professionaljeweller.com/feed/",
+    "https://www.voguebusiness.com/feed/companies/jewellery",
+    "https://www.gold.org/rss/news",
+    
+    # specialized Indian Industry
+    "https://www.solitaireinternational.com/feed/",
+    "https://gjepc.org/news_rss.php",
+    
+    # Brand Specific Google News Tracking (Dynamic)
+    "https://news.google.com/rss/search?q=Titan+Company+Tanishq+jewellery+news&hl=en-IN&gl=IN&ceid=IN:en",
+    "https://news.google.com/rss/search?q=Kalyan+Jewellers+Malabar+Gold+industry&hl=en-IN&gl=IN&ceid=IN:en",
+    "https://news.google.com/rss/search?q=Palmonas+GIVA+demi-fine+jewellery&hl=en-IN&gl=IN&ceid=IN:en",
+    "https://news.google.com/rss/search?q=LVMH+Tiffany+Richemont+strategy+jewellery&hl=en-US&gl=US&ceid=US:en",
+]
+
+MAX_ITEMS_PER_FEED = 10
+MAX_TOTAL_ITEMS = 40  
 IST = pytz.timezone("Asia/Kolkata")
 
-DEFAULT_DIGEST_ROLE = "investor"
-
 # =========================================================
-# 2. HELPERS
-# =========================================================
+# 2. INTELLIGENT FETCHING
+# =========================-================================
 
 def is_recent(entry) -> bool:
     now = datetime.now(IST)
@@ -40,10 +56,8 @@ def is_recent(entry) -> bool:
         dt = datetime.fromtimestamp(time.mktime(entry.published_parsed), IST)
     elif hasattr(entry, "updated_parsed") and entry.updated_parsed:
         dt = datetime.fromtimestamp(time.mktime(entry.updated_parsed), IST)
-    if not dt:
-        return False
-    return (now - dt) <= timedelta(hours=24)
-
+    if not dt: return False
+    return (now - dt) <= timedelta(hours=36) # Increased window slightly for global news
 
 def fetch_news() -> List[Dict]:
     items = []
@@ -52,124 +66,101 @@ def fetch_news() -> List[Dict]:
 
     for feed_url in RSS_FEEDS:
         feed = feedparser.parse(feed_url)
-        source = feed.feed.get("title", feed_url)
+        source = feed.feed.get("title", "Industry Report")
         entries = feed.entries[:MAX_ITEMS_PER_FEED]
 
-        recent = [e for e in entries if is_recent(e)]
-        use_entries = recent if recent else entries
-
-        for e in use_entries:
-            if len(items) >= MAX_TOTAL_ITEMS:
-                return items
-
+        for e in entries:
+            if not is_recent(e): continue
+            
             title = (e.get("title") or "").strip()
             link = (e.get("link") or "").strip()
-            if not title or not link:
-                continue
-
-            key = title.lower()
-            if key in seen:
-                continue
-            seen.add(key)
+            if not title or not link or title.lower() in seen: continue
+            
+            # Brand Prioritization Logic
+            priority = 0
+            for brand in TARGET_BRANDS:
+                if brand.lower() in title.lower():
+                    priority = 1
+                    break
 
             items.append({
                 "id": idx,
                 "source": source,
                 "title": title,
-                "link": link
+                "link": link,
+                "priority": priority
             })
+            seen.add(title.lower())
             idx += 1
 
-    return items
-
+    # Sort by priority so AI sees target brands first
+    return sorted(items, key=lambda x: x['priority'], reverse=True)[:MAX_TOTAL_ITEMS]
 
 def build_headlines_text(items: List[Dict]) -> str:
-    return "\n".join(
-        f"{i['id']}) [{i['source']}] {i['title']}"
-        for i in items
-    )
-
-
-def pick_editorial(items: List[Dict]) -> Dict:
-    """
-    Pick the most recent / strategic article for Editorial Must-Read
-    """
-    return items[0]  # most recent due to ordering
+    return "\n".join([f"{' [PRIORITY]' if i['priority'] else ''} {i['source']}: {i['title']}" for i in items])
 
 # =========================================================
-# 3. OPENAI – PROCUREMENT → CEO DIGEST
+# 3. THE CEO-STRATEGIST PROMPT (GPT-4o)
 # =========================================================
 
-def ask_ai_for_digest(headlines_text: str, editorial: Dict) -> str:
+def ask_ai_for_digest(headlines_text: str, items: List[Dict]) -> str:
     client = OpenAI()
-    today = datetime.now(IST).strftime("%Y-%m-%d")
+    today = datetime.now(IST).strftime("%B %d, %Y")
+    
+    # Extract titles for the context
+    editorial_sample = items[0]['title'] if items else "Market Volatility"
 
     prompt = f"""
-You are mentoring a senior jewellery procurement & merchandising leader
-being trained for CEO responsibility.
+You are the Chief Strategy Officer for a multi-billion dollar jewellery conglomerate. 
+Your audience is the CEO and the Board of Directors. 
 
 Date: {today}
-India is the core market.
+Context: India is the primary profit engine; Global Luxury (LVMH/Richemont) is the benchmark for strategy.
 
-HEADLINES:
+INPUT HEADLINES:
 {headlines_text}
 
-EDITORIAL MUST-READ ARTICLE:
-Title: {editorial['title']}
-Link: {editorial['link']}
-
-OUTPUT RULES:
-- HTML only
-- Blunt, practical, decision-oriented
-- SIGNAL → IMPACT → COMMAND
+TASK: Generate a "Premium Intelligence Briefing."
+STYLE: High-stakes, analytical, sharp, and predictive. No fluff. Use HTML for structure.
 
 MANDATORY SECTIONS:
 
-<h2>🔎 Executive Snapshot</h2>
+1. <h2 style="color: #b8860b;">💎 The Billion-Dollar Brand Pulse</h2>
+Analyze news regarding Titan, Kalyan, Malabar, and Global Luxury players. 
+How are they shifting their store footprints, marketing, or inventory? 
 
-<h2>🌍 Macro & Policy Drivers</h2>
+2. <h2 style="color: #2c3e50;">🌍 Macro & Hedging Strategy</h2>
+Gold/Silver price movements vs. interest rate projections. 
+Impact on the Indian "Making Charge" competitive landscape.
 
-<h2>🪙 Gold & Silver Reality</h2>
+3. <h2 style="color: #2c3e50;">📦 The Sourcing & Procurement Edge</h2>
+Compare manufacturing logic:
+- **Mass Scale:** Casting vs. Machine-made (Titan/Kalyan strategy).
+- **Heritage:** Nakashi, Kundan, and Filigree (Why hand-made justifies a 25% premium).
+- **Modern:** Demi-fine (Palmonas/GIVA) and Lab-Grown (Limelight). How should a CEO balance inventory between 22k Gold and LGD?
 
-<h2>💎 Diamonds & Polki Pipeline</h2>
+4. <h2 style="color: #2c3e50;">📉 What is 'Stuck' vs 'Flowing'</h2>
+Predict based on current sentiment: Are consumers buying heavy bridal or moving to lightweight 'everyday luxury'?
 
-<h2>🇮🇳 India Demand Reality</h2>
+5. <h2 style="color: #c0392b;">🎯 Strategic Command</h2>
+Ask one hard question about the business model (e.g., "Is our reliance on franchised showrooms a liability in a high-interest environment?") and provide the CEO-level answer.
 
-<h2>📦 What Is Selling vs What Is Stuck</h2>
-
-<h2>🧵 Product & Craft Intelligence (Procurement Mastery)</h2>
-Explain manufacturing logic, making charges (retail vs karigar),
-risk, margin, and sourcing complexity for:
-- Handmade die/stamp, chillai, regi, filigree
-- Slab 1/2, PJWS, Enamel, Jaali
-- Kundan, Antique, Nakashi (die / hand / full)
-- Casting vs Handmade
-- Bangles: hollow, filigree, sankha, pola
-- Direct casting combinations
-Focus on how a procurement head should think.
-
-<h2>📰 Editorial Must-Read</h2>
-Explain why this article matters.
-Include clickable link.
-
-<h2>🎯 Strategic Question of the Day</h2>
-Ask the question AND answer it as a CEO would.
-
-<h2>🧠 Procurement → CEO Lens</h2>
-What decision today builds long-term enterprise advantage?
+6. <h2 style="color: #2c3e50;">🔗 Top 3 Must-Read Sources</h2>
+List 3 most critical links from the headlines provided with 1-sentence logic why they are mandatory.
 """
 
-    response = client.responses.create(
-        model="gpt-4.1",
-        input=prompt,
-        temperature=0.35,
-        max_output_tokens=1900
+    response = client.chat.completions.create(
+        model="gpt-4o", # Using GPT-4o for higher reasoning
+        messages=[{"role": "system", "content": "You are a professional luxury industry consultant."},
+                  {"role": "user", "content": prompt}],
+        temperature=0.2,
+        max_tokens=2500
     )
 
-    return response.output_text.strip()
+    return response.choices[0].message.content
 
 # =========================================================
-# 4. EMAIL
+# 4. EMAIL & EXECUTION
 # =========================================================
 
 def send_email(subject: str, html: str):
@@ -178,7 +169,22 @@ def send_email(subject: str, html: str):
     msg["To"] = os.environ["EMAIL_TO"]
     msg["Subject"] = subject
 
-    msg.attach(MIMEText(html, "html"))
+    # Add some basic CSS for a premium look
+    styled_html = f"""
+    <html>
+        <body style="font-family: 'Georgia', serif; line-height: 1.6; color: #333; max-width: 800px; margin: auto; padding: 20px; border: 1px solid #eee;">
+            <div style="text-align: center; border-bottom: 2px solid #b8860b; padding-bottom: 10px; margin-bottom: 20px;">
+                <h1 style="color: #b8860b; margin-bottom: 0;">JEWELLERY EXECUTIVE INTELLIGENCE</h1>
+                <p style="text-transform: uppercase; letter-spacing: 2px; font-size: 12px;">Confidential Strategy Briefing</p>
+            </div>
+            {html}
+            <div style="margin-top: 40px; font-size: 10px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 20px;">
+                Generated by Gemini Intelligence Labs for Private Circulation.
+            </div>
+        </body>
+    </html>
+    """
+    msg.attach(MIMEText(styled_html, "html"))
 
     context = ssl.create_default_context()
     with smtplib.SMTP(os.environ["SMTP_SERVER"], int(os.environ.get("SMTP_PORT", 587))) as server:
@@ -186,22 +192,19 @@ def send_email(subject: str, html: str):
         server.login(os.environ["SMTP_USERNAME"], os.environ["SMTP_PASSWORD"])
         server.send_message(msg)
 
-# =========================================================
-# 5. MAIN
-# =========================================================
-
 def main():
+    print("Fetching industry intelligence...")
     news = fetch_news()
     if not news:
-        send_email("Jewellery Digest", "<p>No material news today.</p>")
+        print("No material news found.")
         return
 
-    editorial = pick_editorial(news)
-    headlines_text = build_headlines_text(news)
-    digest = ask_ai_for_digest(headlines_text, editorial)
+    print(f"Analyzing {len(news)} reports...")
+    digest = ask_ai_for_digest(build_headlines_text(news), news)
 
-    subject = f"Jewellery Procurement → CEO Intelligence | {datetime.now(IST).strftime('%d %b %Y')}"
+    subject = f"💎 CEO Intelligence: {datetime.now(IST).strftime('%d %b %Y')} | Market Strategy"
     send_email(subject, digest)
+    print("Strategic digest sent successfully.")
 
 if __name__ == "__main__":
     main()
