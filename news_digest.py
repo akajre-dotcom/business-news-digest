@@ -313,15 +313,6 @@ MIN_REQUIRED_SECTIONS = 9  # you defined 10; allow 1 margin for safety
 
 warning_note = ""
 
-if not validate_sections(digest):
-    warning_note = (
-        "<p style='color:#a00; font-size:13px;'>"
-        "<b>Note:</b> One or more expected sections may be missing or merged today. "
-        "Content is still delivered for review."
-        "</p>"
-    )
-
-digest = warning_note + digest
 
 
 
@@ -398,6 +389,7 @@ def main():
 
     subject = f"Jewellery Procurement → CEO Intelligence | {datetime.now(IST).strftime('%d %b %Y')}"
     send_email(subject, digest)
+
 
 
 
