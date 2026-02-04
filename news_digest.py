@@ -17,9 +17,20 @@ from email.utils import make_msgid   # ✅ added
 # =========================================================
 
 TARGET_BRANDS = [
-    "Titan", "Tanishq", "Kalyan Jewellers", "Malabar Gold", "Kisna",
-    "PC Jeweller", "PNG Jewellers", "Palmonas", "CaratLane", "BlueStone",
-    "LVMH", "Tiffany", "Cartier", "Bulgari", "Richemont"
+    "Tanishq", "Titan", "Kalyan Jewellers", "Malabar Gold & Diamonds", 
+    "Joyalukkas", "PC Jeweller", "Reliance Jewels", "Senco Gold & Diamonds", 
+    "GRT Jewellers", "Bhima", "Khazana", "Lalitha Jewellery", 
+    "Vummidi Bangaru", "VBJ", "Prince", "Thangamayil", "Jos Alukkas", 
+    "Tribhovandas Bhimji Zaveri", "TBZ", "P.N. Gadgil", "PNG", 
+    "Waman Hari Pethe", "WHP", "Chandukaka Saraf", "Chintamani's", 
+    "P.C. Chandra Jewellers", "Anjali Jewellers", "Sawansukha", 
+    "Chandrani Pearls", "Khanna Jewellers", "Mehra Brothers", "Liali", 
+    "Punjab Jewellers", "Zoya", "Hazoorilal Legacy", "Sabyasachi Fine Jewellery", 
+    "C. Krishniah Chetty", "CKC", "Amrapali Jewels", "Birdhichand Ghanshyamdas", 
+    "Kantilal Chhotalal", "CaratLane", "BlueStone", "Mia by Tanishq", 
+    "Melorra", "GIVA", "Palmonas", "Limelight Diamonds", "Jewelbox", 
+    "Fiona Diamonds", "Avtaara", "Ivana", "Kushal’s Fashion Jewellery", 
+    "Rubans", "Isharya", "Outhouse", "Zaveri Pearls", "Salty"
 ]
 
 RSS_FEEDS = [
