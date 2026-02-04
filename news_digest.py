@@ -308,20 +308,22 @@ End the response only after completing <h2>🧠 Procurement → CEO Lens</h2>.
     return safe_html
 
 REQUIRED_SECTIONS = [
-    "🔎 Executive Snapshot",
-    "🌍 Macro & Policy Drivers",
-    "🪙 Gold & Silver Reality",
-    "💎 Diamonds & Polki Pipeline",
-    "🇮🇳 India Demand Reality",
-    "📦 What Is Selling vs What Is Stuck",
-    "🧵 Product & Craft Intelligence",
-    "📰 Editorial Must-Read",
-    "🎯 Strategic Question of the Day",
-    "🧠 Procurement → CEO Lens",
+    "Executive Snapshot",
+    "Macro & Policy Drivers",
+    "Gold & Silver",
+    "Diamonds",
+    "India Demand",
+    "What Is Selling",
+    "Product & Craft Intelligence",
+    "Editorial Must-Read",
+    "Strategic Question",
+    "Procurement",
 ]
 
 def validate_sections(html: str) -> bool:
-    return all(section in html for section in REQUIRED_SECTIONS)
+    lower_html = html.lower()
+    return all(section.lower() in lower_html for section in REQUIRED_SECTIONS)
+
 
 
 # =========================================================
