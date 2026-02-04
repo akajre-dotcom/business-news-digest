@@ -191,12 +191,18 @@ def detect_brand_news(items: List[Dict]) -> Dict[str, List[Dict]]:
                 hits.setdefault(brand, []).append(item)
     return hits
 
+def safe_link(url: str) -> str:
+    # Strip Google News tracking params (keeps link readable & short)
+    if "news.google.com" in url:
+        return url.split("&")[0]
+    return url
 
 def build_headlines_text(items: List[Dict]) -> str:
     return "\n".join(
-        f"{i['id']}) <a href='{i['link']}'>{i['title']}</a>"
+        f"{i['id']}) <a href='{safe_link(i['link'])}'>{i['title']}</a>"
         for i in items
     )
+
 
 
 def pick_editorial(items: List[Dict]) -> Dict:
@@ -213,6 +219,10 @@ def enforce_section_start(html: str) -> str:
 # 4. OPENAI – INLINE LINK ENFORCED
 # =========================================================
 
+# =========================================================
+# 4. OPENAI – STABLE LONG-FORM DIGEST GENERATION
+# =========================================================
+
 def ask_ai_for_digest(headlines_text: str, editorial: Dict, brand_news: Dict) -> str:
     client = OpenAI()
     today = datetime.now(IST).strftime("%Y-%m-%d")
@@ -220,55 +230,88 @@ def ask_ai_for_digest(headlines_text: str, editorial: Dict, brand_news: Dict) ->
     brand_context = ""
     for brand, articles in brand_news.items():
         for a in articles:
-            # We pass the link here, but the prompt will tell AI to hide the long URL
-            brand_context += f"Brand: {brand} | Context: {a['title']} (URL: {a['link']})\n"
+            brand_context += f"{brand} mentioned in: {a['title']}. "
+
 
     prompt = f"""
 {TOP_LEVEL_INSTRUCTION}
 
 Date: {today}
-Context: India is the core market. Gold prices are volatile in 2026; Lab-Grown Diamonds (LGD) are shifting from 'alternative' to 'mainstream luxury'.
+India is the core market.
 
-HEADLINES SOURCE DATA:
+HEADLINES (ALL SOURCES EMBEDDED):
 {headlines_text}
 
-EDITORIAL SOURCE DATA:
-Title: {editorial['title']}
-URL: {editorial['link']}
+EDITORIAL MUST-READ:
+<a href="{editorial['link']}">{editorial['title']}</a>
 
-BRAND SIGNALS:
-{brand_context if brand_context else "None today."}
+BRAND-SPECIFIC MARKET SIGNALS:
+{brand_context if brand_context else "No brand-specific corporate developments detected today."}
 
-STRICT OUTPUT RULES:
-1. HTML ONLY. Use <h2> and <p> tags.
-2. NEVER display a raw URL in the text. Always wrap links in a concise, descriptive phrase (e.g., <a href="URL">See full report</a>).
-3. SECTION DENSITY: Each section must be 1-2 punchy paragraphs. Focus on "The Why" (Insider Intelligence).
-4. NO MARKDOWN: Do not use ** or #. Use <b> or <i> within HTML tags if needed.
-5. COMPLETE THE MISSION: You must finish every section. If you are running out of space, keep the final sections concise but never skip them.
+STRICT OUTPUT RULES (NON-NEGOTIABLE):
+- Output HTML only
+- Do NOT output markdown
+- Do NOT output emojis
+- Do NOT output raw text outside HTML tags
+- Do NOT output </body> or </html>
+- Every paragraph MUST be wrapped in <p>...</p>
+- Every section title MUST be wrapped in <h2>...</h2>
+- Links must be embedded mid-sentence
+- Never end a paragraph with a hyperlink
+- Never leave an <a> tag open — if unsure, omit the link entirely
 
-MANDATORY SECTIONS:
-<h2>🔎 Executive Snapshot</h2>
-<h2>🌍 Macro & Policy Drivers</h2>
-<h2>🪙 Gold & Silver Reality</h2>
-<h2>💎 Diamonds & Polki Pipeline</h2>
-<h2>🇮🇳 India Demand Reality</h2>
-<h2>📦 What Is Selling vs What Is Stuck</h2>
-<h2>🧵 Product & Craft Intelligence</h2>
-<h2>📰 Editorial Must-Read</h2>
-<h2>🎯 Strategic Question of the Day</h2>
-<h2>🧠 Procurement → CEO Lens</h2>
+LENGTH CONTROL (CRITICAL):
+- Use 1 concise <p> paragraph per section
+- Product & Craft Intelligence may use up to 2 <p> paragraphs total or One short para defining all questions answers
+- If space is tight, reduce depth but NEVER skip a section
+
+MANDATORY SECTIONS (MUST COMPLETE ALL):
+
+<h2>Executive Snapshot</h2>
+
+<h2>Macro & Policy Drivers</h2>
+
+<h2>Gold & Silver Reality</h2>
+
+<h2>Diamonds & Polki Pipeline</h2>
+
+<h2>India Demand Reality</h2>
+
+<h2>What Is Selling vs What Is Stuck</h2>
+
+<h2>Product & Craft Intelligence</h2>
+Teach 1–2 jewellery products deeply.
+Cover visual appeal, how it is made, workmanship type, making charges,
+margin logic, sourcing risk, buyer profile, and one line of craft wisdom.
+
+<h2>Editorial Must-Read</h2>
+
+<h2>Strategic Question of the Day</h2>
+
+<h2>Procurement → CEO Lens</h2>
+
+ABSOLUTE REQUIREMENT:
+- You MUST complete EVERY section listed above
+- Do NOT stop early
+- End the response ONLY after completing <h2>Procurement → CEO Lens</h2>
 """
 
-    response = client.chat.completions.create( # Note: Updated to standard chat completions
-        model="gpt-4o",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.35,
-        max_tokens=4000 # Increased for full output
+    response = client.responses.create(
+        model="gpt-4.1",
+        input=prompt,
+        temperature=0.30,
+        max_output_tokens=3800
     )
 
-    raw_html = response.choices[0].message.content.strip()
-    return enforce_section_start(raw_html)
-    return safe_html
+    raw_html = response.output_text.strip()
+
+    # Safety: strip anything before first <h2>
+    first_h2 = raw_html.find("<h2>")
+    if first_h2 > 0:
+        raw_html = raw_html[first_h2:]
+
+    return raw_html
+
 
 import re
 
