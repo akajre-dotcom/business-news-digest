@@ -329,35 +329,35 @@ def validate_sections(html: str) -> bool:
 # =========================================================
 
 def send_email(subject: str, html: str):
-    full_html = f"""
+    full_html = """
     <!DOCTYPE html>
     <html>
     <head>
         <meta charset="UTF-8">
         <style>
-        body {{
+        body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
             line-height: 1.6;
             font-size: 15px;
             color: #111;
-        }}
-        h2 {{
+        }
+        h2 {
             margin-top: 32px;
             margin-bottom: 12px;
             padding-bottom: 6px;
             border-bottom: 1px solid #e5e5e5;
-        }}
-        p {{
+        }
+        p {
             margin: 10px 0 14px 0;
-        }}
-        a {{
+        }
+        a {
             color: #0b57d0;
             text-decoration: none;
-        }}
+        }
         </style>
     </head>
     <body>
-        {html}
+        """ + html + """
     </body>
     </html>
     """
@@ -373,6 +373,7 @@ def send_email(subject: str, html: str):
         server.starttls(context=ssl.create_default_context())
         server.login(os.environ["SMTP_USERNAME"], os.environ["SMTP_PASSWORD"])
         server.send_message(msg)
+
 
 
 
