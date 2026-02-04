@@ -220,91 +220,54 @@ def ask_ai_for_digest(headlines_text: str, editorial: Dict, brand_news: Dict) ->
     brand_context = ""
     for brand, articles in brand_news.items():
         for a in articles:
-            brand_context += (
-                f"{brand} featured in "
-                f"<a href='{a['link']}'>{a['title']}</a>. "
-            )
-
+            # We pass the link here, but the prompt will tell AI to hide the long URL
+            brand_context += f"Brand: {brand} | Context: {a['title']} (URL: {a['link']})\n"
 
     prompt = f"""
 {TOP_LEVEL_INSTRUCTION}
 
 Date: {today}
-India is the core market.
+Context: India is the core market. Gold prices are volatile in 2026; Lab-Grown Diamonds (LGD) are shifting from 'alternative' to 'mainstream luxury'.
 
-HEADLINES (ALL CLICKABLE):
+HEADLINES SOURCE DATA:
 {headlines_text}
 
-EDITORIAL MUST-READ:
-<a href="{editorial['link']}">{editorial['title']}</a>
+EDITORIAL SOURCE DATA:
+Title: {editorial['title']}
+URL: {editorial['link']}
 
-BRAND-SPECIFIC MARKET SIGNALS:
-{brand_context if brand_context else "No brand-specific corporate developments today."}
+BRAND SIGNALS:
+{brand_context if brand_context else "None today."}
 
 STRICT OUTPUT RULES:
-- HTML only
-- NO separate link lines
-- NO reference sections
-- ALL sources must be embedded as clickable text or headings
-- Every cited fact must be naturally clickable
-- Write like a master jeweller teaching an apprentice
-- Never begin a line or paragraph with a hyperlink or dash
-- Links must be embedded mid-sentence, never at the end
-
-HTML FORMAT RULES (NON-NEGOTIABLE):
-- Wrap EVERY section title in <h2>...</h2>
-- Wrap EVERY paragraph in <p>...</p>
-- NEVER output raw text outside HTML tags
-- NEVER output </body> or </html>
-- NEVER output markdown or emojis without HTML tags
-- Close every <a> tag properly
-
-FORMAT ENFORCEMENT:
-- Each section MUST contain multiple <p> paragraphs
-- No paragraph may exceed 4 lines of text
-- Insert natural paragraph breaks for readability
-ABSOLUTE REQUIREMENT:
-You must complete EVERY section listed.
-Do not stop early.
-End only AFTER completing <h2>🧠 Procurement → CEO Lens</h2>.
-If necessary, reduce verbosity per section but NEVER skip a section.
-
-
+1. HTML ONLY. Use <h2> and <p> tags.
+2. NEVER display a raw URL in the text. Always wrap links in a concise, descriptive phrase (e.g., <a href="URL">See full report</a>).
+3. SECTION DENSITY: Each section must be 1-2 punchy paragraphs. Focus on "The Why" (Insider Intelligence).
+4. NO MARKDOWN: Do not use ** or #. Use <b> or <i> within HTML tags if needed.
+5. COMPLETE THE MISSION: You must finish every section. If you are running out of space, keep the final sections concise but never skip them.
 
 MANDATORY SECTIONS:
-
 <h2>🔎 Executive Snapshot</h2>
 <h2>🌍 Macro & Policy Drivers</h2>
 <h2>🪙 Gold & Silver Reality</h2>
 <h2>💎 Diamonds & Polki Pipeline</h2>
 <h2>🇮🇳 India Demand Reality</h2>
 <h2>📦 What Is Selling vs What Is Stuck</h2>
-
-<h2>🧵 Product & Craft Intelligence (Daily Craft Learning)</h2>
-Teach 1–2 products deeply using visual language, process, margin, risk, buyer, and craft wisdom.
-
+<h2>🧵 Product & Craft Intelligence</h2>
 <h2>📰 Editorial Must-Read</h2>
 <h2>🎯 Strategic Question of the Day</h2>
 <h2>🧠 Procurement → CEO Lens</h2>
-
-IMPORTANT:
-You MUST complete EVERY section listed above.
-Do NOT stop early.
-Do NOT summarize multiple sections together.
-End the response only after completing <h2>🧠 Procurement → CEO Lens</h2>.
 """
 
-    response = client.responses.create(
-        model="gpt-4.1",
-        input=prompt,
+    response = client.chat.completions.create( # Note: Updated to standard chat completions
+        model="gpt-4o",
+        messages=[{"role": "user", "content": prompt}],
         temperature=0.35,
-        max_output_tokens=1900
+        max_tokens=4000 # Increased for full output
     )
 
-    raw_html = response.output_text.strip()
-
-    # HARD FAIL-SAFE: ensure valid container
-    safe_html = enforce_section_start(raw_html)
+    raw_html = response.choices[0].message.content.strip()
+    return enforce_section_start(raw_html)
     return safe_html
 
 import re
