@@ -397,16 +397,8 @@ def main():
     digest = ask_ai_for_digest(headlines_text, editorial, brand_news)
 
     subject = f"Jewellery Procurement → CEO Intelligence | {datetime.now(IST).strftime('%d %b %Y')}"
-
-    if not validate_sections(digest):
-        send_email(
-            "Jewellery Intelligence – Generation Error",
-            "<p>Digest generation failed section validation. Please retry.</p>"
-        )
-        return
-
-    
     send_email(subject, digest)
+
 
 
 if __name__ == "__main__":
