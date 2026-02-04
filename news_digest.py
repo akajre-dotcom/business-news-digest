@@ -311,9 +311,18 @@ import re
 
 MIN_REQUIRED_SECTIONS = 9  # you defined 10; allow 1 margin for safety
 
-def validate_sections(html: str) -> bool:
-    h2_count = len(re.findall(r"<h2>", html))
-    return h2_count >= MIN_REQUIRED_SECTIONS
+warning_note = ""
+
+if not validate_sections(digest):
+    warning_note = (
+        "<p style='color:#a00; font-size:13px;'>"
+        "<b>Note:</b> One or more expected sections may be missing or merged today. "
+        "Content is still delivered for review."
+        "</p>"
+    )
+
+digest = warning_note + digest
+
 
 
 
