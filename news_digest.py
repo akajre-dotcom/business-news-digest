@@ -244,6 +244,13 @@ STRICT OUTPUT RULES:
 - Never begin a line or paragraph with a hyperlink or dash
 - Links must be embedded mid-sentence, never at the end
 
+HTML FORMAT RULES (NON-NEGOTIABLE):
+- Wrap EVERY section title in <h2>...</h2>
+- Wrap EVERY paragraph in <p>...</p>
+- NEVER output raw text outside HTML tags
+- NEVER output </body> or </html>
+- NEVER output markdown or emojis without HTML tags
+- Close every <a> tag properly
 
 
 
@@ -277,42 +284,65 @@ End the response only after completing <h2>🧠 Procurement → CEO Lens</h2>.
         max_output_tokens=1900
     )
 
-    return response.output_text.strip()
+    raw_html = response.output_text.strip()
+
+    # HARD FAIL-SAFE: ensure valid container
+    safe_html = f"""
+    <h2>🔎 Executive Snapshot</h2>
+    {raw_html}
+    """
+    
+    return safe_html
+
 
 # =========================================================
 # 5. EMAIL
 # =========================================================
 
 def send_email(subject: str, html: str):
+    full_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                line-height: 1.5;
+                font-size: 14px;
+            }}
+            h2 {{
+                margin-top: 24px;
+                border-bottom: 1px solid #ddd;
+                padding-bottom: 4px;
+            }}
+            p {{
+                margin: 10px 0;
+            }}
+            a {{
+                color: #1a0dab;
+                text-decoration: none;
+            }}
+        </style>
+    </head>
+    <body>
+        {html}
+    </body>
+    </html>
+    """
+
     msg = MIMEMultipart("alternative")
     msg["From"] = os.environ["EMAIL_FROM"]
     msg["To"] = os.environ["EMAIL_TO"]
     msg["Subject"] = subject
 
-    full_html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-    <meta charset="UTF-8">
-    <style>
-    body {{ font-family: Arial, sans-serif; line-height: 1.45; }}
-    h2 {{ margin-top: 24px; }}
-    p {{ margin: 8px 0; }}
-    </style>
-    </head>
-    <body>
-    {html}
-    </body>
-    </html>
-    """
-    
     msg.attach(MIMEText(full_html, "html"))
-
 
     with smtplib.SMTP(os.environ["SMTP_SERVER"], int(os.environ.get("SMTP_PORT", 587))) as server:
         server.starttls(context=ssl.create_default_context())
         server.login(os.environ["SMTP_USERNAME"], os.environ["SMTP_PASSWORD"])
         server.send_message(msg)
+
 
 # =========================================================
 # 6. MAIN
