@@ -202,6 +202,13 @@ def build_headlines_text(items: List[Dict]) -> str:
 def pick_editorial(items: List[Dict]) -> Dict:
     return items[0]
 
+
+def enforce_section_start(html: str) -> str:
+    first_h2 = html.find("<h2>")
+    if first_h2 > 0:
+        return html[first_h2:]
+    return html
+
 # =========================================================
 # 4. OPENAI – INLINE LINK ENFORCED
 # =========================================================
@@ -252,6 +259,16 @@ HTML FORMAT RULES (NON-NEGOTIABLE):
 - NEVER output markdown or emojis without HTML tags
 - Close every <a> tag properly
 
+FORMAT ENFORCEMENT:
+- Each section MUST contain multiple <p> paragraphs
+- No paragraph may exceed 4 lines of text
+- Insert natural paragraph breaks for readability
+ABSOLUTE REQUIREMENT:
+You must complete EVERY section listed.
+Do not stop early.
+End only AFTER completing <h2>🧠 Procurement → CEO Lens</h2>.
+If necessary, reduce verbosity per section but NEVER skip a section.
+
 
 
 MANDATORY SECTIONS:
@@ -287,12 +304,24 @@ End the response only after completing <h2>🧠 Procurement → CEO Lens</h2>.
     raw_html = response.output_text.strip()
 
     # HARD FAIL-SAFE: ensure valid container
-    safe_html = f"""
-    <h2>🔎 Executive Snapshot</h2>
-    {raw_html}
-    """
-    
+    safe_html = enforce_section_start(raw_html)
     return safe_html
+
+REQUIRED_SECTIONS = [
+    "🔎 Executive Snapshot",
+    "🌍 Macro & Policy Drivers",
+    "🪙 Gold & Silver Reality",
+    "💎 Diamonds & Polki Pipeline",
+    "🇮🇳 India Demand Reality",
+    "📦 What Is Selling vs What Is Stuck",
+    "🧵 Product & Craft Intelligence",
+    "📰 Editorial Must-Read",
+    "🎯 Strategic Question of the Day",
+    "🧠 Procurement → CEO Lens",
+]
+
+def validate_sections(html: str) -> bool:
+    return all(section in html for section in REQUIRED_SECTIONS)
 
 
 # =========================================================
@@ -306,24 +335,27 @@ def send_email(subject: str, html: str):
     <head>
         <meta charset="UTF-8">
         <style>
-            body {{
-                font-family: Arial, sans-serif;
-                line-height: 1.5;
-                font-size: 14px;
-            }}
-            h2 {{
-                margin-top: 24px;
-                border-bottom: 1px solid #ddd;
-                padding-bottom: 4px;
-            }}
-            p {{
-                margin: 10px 0;
-            }}
-            a {{
-                color: #1a0dab;
-                text-decoration: none;
-            }}
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+            line-height: 1.6;
+            font-size: 15px;
+            color: #111;
+        }
+        h2 {
+            margin-top: 32px;
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #e5e5e5;
+        }
+        p {
+            margin: 10px 0 14px 0;
+        }
+        a {
+            color: #0b57d0;
+            text-decoration: none;
+        }
         </style>
+
     </head>
     <body>
         {html}
@@ -361,6 +393,15 @@ def main():
     digest = ask_ai_for_digest(headlines_text, editorial, brand_news)
 
     subject = f"Jewellery Procurement → CEO Intelligence | {datetime.now(IST).strftime('%d %b %Y')}"
+
+    if not validate_sections(digest):
+        send_email(
+            "Jewellery Intelligence – Generation Error",
+            "<p>Digest generation failed section validation. Please retry.</p>"
+        )
+        return
+
+    
     send_email(subject, digest)
 
 
