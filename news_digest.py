@@ -23,10 +23,12 @@ RSS_FEEDS = [
     "https://rapaport.com/feed/",
     "https://www.solitaireinternational.com/feed/",
     "https://news.google.com/rss/search?q=India+jewellery+market&hl=en-IN&gl=IN&ceid=IN:en",
+    "https://news.google.com/rss/search?q=diamond+industry+India&hl=en-IN&gl=IN&ceid=IN:en",
+    "https://news.google.com/rss/search?q=gold+import+duty+India&hl=en-IN&gl=IN&ceid=IN:en",
 ]
 
-MAX_ITEMS_PER_FEED = 8
-MAX_TOTAL_ITEMS = 30
+MAX_ITEMS_PER_FEED = 12
+MAX_TOTAL_ITEMS = 60
 IST = pytz.timezone("Asia/Kolkata")
 
 logging.basicConfig(level=logging.INFO)
@@ -53,26 +55,20 @@ def is_recent(entry) -> bool:
 # SIGNAL SCORING
 # =========================================================
 
-HIGH_VALUE_TERMS = [
-    "gold", "import duty", "policy", "export",
-    "earnings", "margin", "diamond",
-    "lab grown", "retail expansion",
-    "gst", "manufacturing", "karigar"
+KEY_TERMS = [
+    "gold", "silver", "diamond", "polki", "lab grown",
+    "export", "import", "duty", "policy", "gst",
+    "earnings", "margin", "retail", "expansion",
+    "manufacturing", "karigar", "wastage"
 ]
 
 def score_item(item: Dict) -> int:
     text = (item["title"] + " " + item["summary"]).lower()
-    score = 0
-
-    for term in HIGH_VALUE_TERMS:
-        if term in text:
-            score += 2
-
-    return score
+    return sum(1 for term in KEY_TERMS if term in text)
 
 
 # =========================================================
-# FETCH NEWS
+# FETCH & FILTER
 # =========================================================
 
 def fetch_news() -> List[Dict]:
@@ -108,69 +104,32 @@ def fetch_news() -> List[Dict]:
             item["score"] = score_item(item)
             items.append(item)
 
+    # Sort by relevance score
     items = sorted(items, key=lambda x: x["score"], reverse=True)
 
-    logging.info(f"Fetched {len(items)} high-signal recent articles.")
-    return items[:MAX_TOTAL_ITEMS]
+    # Keep top 50% most relevant
+    cutoff = max(10, len(items) // 2)
+    filtered = items[:cutoff]
+
+    logging.info(f"Selected {len(filtered)} high-relevance articles.")
+    return filtered
 
 
 # =========================================================
-# CLUSTERING
-# =========================================================
-
-def cluster_news(items: List[Dict]) -> Dict[str, List[Dict]]:
-    clusters = {
-        "macro": [],
-        "commodities": [],
-        "diamonds": [],
-        "retail": [],
-        "craft": []
-    }
-
-    for item in items:
-        text = (item["title"] + item["summary"]).lower()
-
-        if any(k in text for k in ["policy", "gst", "duty", "trade", "export"]):
-            clusters["macro"].append(item)
-
-        if "gold" in text or "silver" in text:
-            clusters["commodities"].append(item)
-
-        if any(k in text for k in ["diamond", "polki", "lab grown"]):
-            clusters["diamonds"].append(item)
-
-        if any(k in text for k in ["retail", "store", "expansion", "earnings"]):
-            clusters["retail"].append(item)
-
-        if any(k in text for k in ["manufacturing", "karigar", "design"]):
-            clusters["craft"].append(item)
-
-    return clusters
-
-
-def format_cluster(cluster_items):
-    return "\n".join(
-        f"- TITLE: {i['title']}\n"
-        f"  SOURCE: {i['source']}\n"
-        f"  SUMMARY: {i['summary']}\n"
-        for i in cluster_items[:5]
-    )
-
-
-# =========================================================
-# STRUCTURE VALIDATION
+# VALIDATION
 # =========================================================
 
 REQUIRED_SECTIONS = [
-    "Executive Signal (3 Minutes)",
-    "Commodity & Capital Impact",
-    "Supplier Power & Risk Map",
-    "Retail & Consumer Shift",
-    "Product Intelligence Deep Dive",
-    "Margin & Working Capital Lens",
-    "CEO Capital Allocation View",
-    "Strategic Question for You",
-    "Action for Today (Sourcing Head Mode)"
+    "Executive Snapshot",
+    "Macro & Policy Drivers",
+    "Gold & Silver Reality",
+    "Diamonds & Polki Pipeline",
+    "India Demand Reality",
+    "What Is Selling vs What Is Stuck",
+    "Product & Craft Intelligence",
+    "Editorial Must-Read",
+    "Strategic Question of the Day",
+    "Procurement → CEO Lens"
 ]
 
 def validate_sections(html: str) -> bool:
@@ -183,125 +142,55 @@ def sanitize_html(html: str) -> str:
 
 
 # =========================================================
-# AI GENERATION (MECHANISTIC MODE)
+# AI GENERATION
 # =========================================================
 
-def extract_atomic_facts(news: List[Dict]) -> str:
+def generate_digest(news: List[Dict]) -> str:
+
     context = "\n".join(
-        f"- TITLE: {i['title']}\n  SUMMARY: {i['summary']}\n"
-        for i in news[:12]
+        f"- TITLE: {i['title']}\n  SOURCE: {i['source']}\n  SUMMARY: {i['summary']}\n"
+        for i in news[:30]
     )
 
     prompt = f"""
-Extract only concrete business facts from the news below.
+You are a master of the global jewellery industry.
 
-Rules:
-- No interpretation
-- No opinion
-- No summary
-- Only factual developments
-- One fact per line
-- Max 12 facts
+Use only the relevant developments below.
+Ignore weak or trivial news.
 
-NEWS:
+No repetition of the same company across more than two sections.
+
+No corporate filler language.
+Every claim must connect to a real development from the input.
+
+If signal concentration is narrow today, state that clearly.
+
+HTML only.
+Each paragraph wrapped in <p>.
+Each section title wrapped in <h2>.
+
+MANDATORY SECTIONS:
+
+<h2>Executive Snapshot</h2>
+<h2>Macro & Policy Drivers</h2>
+<h2>Gold & Silver Reality</h2>
+<h2>Diamonds & Polki Pipeline</h2>
+<h2>India Demand Reality</h2>
+<h2>What Is Selling vs What Is Stuck</h2>
+<h2>Product & Craft Intelligence</h2>
+<h2>Editorial Must-Read</h2>
+<h2>Strategic Question of the Day</h2>
+<h2>Procurement → CEO Lens</h2>
+
+NEWS INPUT:
 {context}
 """
 
     response = client.responses.create(
         model="gpt-4.1-mini",
         input=prompt,
-        temperature=0.1,
-        max_output_tokens=800
-    )
-
-    return response.output_text.strip()
-
-
-def derive_implications(facts: str) -> str:
-    prompt = f"""
-You are a jewellery industry operator.
-
-For EACH fact below, derive:
-
-1) Immediate operational consequence
-2) Sourcing implication
-3) Margin implication
-4) Working capital implication
-
-Do NOT repeat the fact wording.
-Be specific.
-If data missing, state limitation.
-
-FACTS:
-{facts}
-"""
-
-    response = client.responses.create(
-        model="gpt-4.1-mini",
-        input=prompt,
-        temperature=0.2,
-        max_output_tokens=1500
-    )
-
-    return response.output_text.strip()
-
-
-def generate_digest(news: List[Dict]) -> str:
-
-    facts = extract_atomic_facts(news)
-    implications = derive_implications(facts)
-
-    prompt = f"""
-You are training a sourcing head to become CEO.
-
-You must NOT repeat the same development across sections.
-Each section must focus on different implications.
-
-No corporate filler.
-No repetition.
-
-Every section must draw from different parts of the implications text.
-
-HTML ONLY.
-Each paragraph inside <p>.
-Each section title inside <h2>.
-
-SECTIONS:
-
-<h2>Executive Signal (3 Minutes)</h2>
-Summarize 3 most strategic implications only.
-
-<h2>Commodity & Capital Impact</h2>
-Focus only on cost structure shifts.
-
-<h2>Supplier Power & Risk Map</h2>
-Focus only on bargaining power and credit.
-
-<h2>Retail & Consumer Shift</h2>
-Focus only on SKU and buyer behavior.
-
-<h2>Product Intelligence Deep Dive</h2>
-Choose one product affected and dissect fully.
-
-<h2>Margin & Working Capital Lens</h2>
-Scenario-based financial thinking.
-
-<h2>CEO Capital Allocation View</h2>
-Where capital should and should NOT go.
-
-<h2>Strategic Question for You</h2>
-
-<h2>Action for Today (Sourcing Head Mode)</h2>
-
-IMPLICATIONS INPUT:
-{implications}
-"""
-
-    response = client.responses.create(
-        model="gpt-4.1-mini",
-        input=prompt,
-        temperature=0.2,
-        max_output_tokens=3000
+        temperature=0.25,
+        max_output_tokens=3500
     )
 
     html = response.output_text.strip()
@@ -310,7 +199,6 @@ IMPLICATIONS INPUT:
         raise ValueError("Digest failed structural validation.")
 
     return sanitize_html(html)
-
 
 
 # =========================================================
@@ -370,7 +258,7 @@ def main():
     news = fetch_news()
 
     if not news:
-        send_email("Jewellery CEO Intelligence", "<p>No high-signal jewellery news today.</p>")
+        send_email("Jewellery Intelligence", "<p>No high-relevance jewellery news today.</p>")
         return
 
     try:
@@ -380,7 +268,7 @@ def main():
         send_email("Jewellery Intelligence ERROR", f"<p>{str(e)}</p>")
         return
 
-    subject = f"Jewellery CEO Intelligence | {datetime.now(IST).strftime('%d %b %Y')}"
+    subject = f"Jewellery Intelligence | {datetime.now(IST).strftime('%d %b %Y')}"
     send_email(subject, digest)
 
 
