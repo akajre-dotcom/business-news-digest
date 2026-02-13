@@ -23,11 +23,6 @@ RSS_FEEDS = [
     "https://rapaport.com/feed/",
     "https://www.solitaireinternational.com/feed/",
     "https://news.google.com/rss/search?q=India+jewellery+market&hl=en-IN&gl=IN&ceid=IN:en",
-    "https://news.google.com/rss/search?q=jewellery+company+India+policy&hl=en-IN&gl=IN&ceid=IN:en",
-    "https://news.google.com/rss/search?q=jewellery+retail+store+India&hl=en-IN&gl=IN&ceid=IN:en",
-    "https://news.google.com/rss/search?q=jewellery+manufacturing+India+craft&hl=en-IN&gl=IN&ceid=IN:en",
-    "https://news.google.com/rss/search?q=handmade+gold+jewellery+India+design&hl=en-IN&gl=IN&ceid=IN:en",
-    "https://news.google.com/rss/search?q=diamond+polki+lab+grown+jewellery+India&hl=en-IN&gl=IN&ceid=IN:en",
 ]
 
 MAX_ITEMS_PER_FEED = 8
@@ -35,7 +30,6 @@ MAX_TOTAL_ITEMS = 30
 IST = pytz.timezone("Asia/Kolkata")
 
 logging.basicConfig(level=logging.INFO)
-
 client = OpenAI()
 
 
@@ -56,7 +50,7 @@ def is_recent(entry) -> bool:
 
 
 # =========================================================
-# SCORING SYSTEM
+# SIGNAL SCORING
 # =========================================================
 
 HIGH_VALUE_TERMS = [
@@ -78,7 +72,7 @@ def score_item(item: Dict) -> int:
 
 
 # =========================================================
-# FETCH + PRIORITIZE
+# FETCH NEWS
 # =========================================================
 
 def fetch_news() -> List[Dict]:
@@ -116,8 +110,7 @@ def fetch_news() -> List[Dict]:
 
     items = sorted(items, key=lambda x: x["score"], reverse=True)
 
-    logging.info(f"Fetched {len(items)} high-signal articles.")
-
+    logging.info(f"Fetched {len(items)} high-signal recent articles.")
     return items[:MAX_TOTAL_ITEMS]
 
 
@@ -157,7 +150,9 @@ def cluster_news(items: List[Dict]) -> Dict[str, List[Dict]]:
 
 def format_cluster(cluster_items):
     return "\n".join(
-        f"- {i['title']} ({i['source']})"
+        f"- TITLE: {i['title']}\n"
+        f"  SOURCE: {i['source']}\n"
+        f"  SUMMARY: {i['summary']}\n"
         for i in cluster_items[:5]
     )
 
@@ -188,7 +183,7 @@ def sanitize_html(html: str) -> str:
 
 
 # =========================================================
-# AI GENERATION
+# AI GENERATION (MECHANISTIC MODE)
 # =========================================================
 
 def generate_digest(news: List[Dict]) -> str:
@@ -215,15 +210,31 @@ CRAFT NEWS:
     prompt = f"""
 You are training a sourcing head to become a CEO in the jewellery industry.
 
-Write elite-level intelligence in HTML only.
+You are NOT allowed to use generic corporate language such as:
+innovation, strategic expansion, volatility management, strong growth, confidence.
 
-Rules:
-- Every paragraph must be wrapped in <p>
-- Every section title must be wrapped in <h2>
-- No markdown
-- No emojis
-- No unfinished <a> tags
-- No text outside HTML
+Every statement must tie directly to a specific news item provided.
+
+For each development:
+- State what happened (specific)
+- State operational consequence
+- State sourcing impact
+- State margin impact (estimate % where possible)
+- State CEO implication
+
+If detail is missing, explicitly say so.
+
+Quantify wherever possible:
+- Making charge ranges
+- Gross margin bands
+- Inventory days effect
+- Supplier credit impact
+
+HTML ONLY.
+Every paragraph inside <p>.
+Every section title inside <h2>.
+No markdown.
+No emojis.
 
 MANDATORY SECTIONS:
 
@@ -237,16 +248,15 @@ MANDATORY SECTIONS:
 <h2>Strategic Question for You</h2>
 <h2>Action for Today (Sourcing Head Mode)</h2>
 
-Use this structured news input:
-
+NEWS INPUT:
 {structured_context}
 """
 
     response = client.responses.create(
         model="gpt-4.1-mini",
         input=prompt,
-        temperature=0.25,
-        max_output_tokens=2800
+        temperature=0.2,
+        max_output_tokens=3000
     )
 
     html = response.output_text.strip()
