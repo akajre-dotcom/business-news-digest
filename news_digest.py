@@ -186,70 +186,115 @@ def sanitize_html(html: str) -> str:
 # AI GENERATION (MECHANISTIC MODE)
 # =========================================================
 
-def generate_digest(news: List[Dict]) -> str:
-
-    clusters = cluster_news(news)
-
-    structured_context = f"""
-MACRO NEWS:
-{format_cluster(clusters["macro"])}
-
-COMMODITY NEWS:
-{format_cluster(clusters["commodities"])}
-
-DIAMOND NEWS:
-{format_cluster(clusters["diamonds"])}
-
-RETAIL NEWS:
-{format_cluster(clusters["retail"])}
-
-CRAFT NEWS:
-{format_cluster(clusters["craft"])}
-"""
+def extract_atomic_facts(news: List[Dict]) -> str:
+    context = "\n".join(
+        f"- TITLE: {i['title']}\n  SUMMARY: {i['summary']}\n"
+        for i in news[:12]
+    )
 
     prompt = f"""
-You are training a sourcing head to become a CEO in the jewellery industry.
+Extract only concrete business facts from the news below.
 
-You are NOT allowed to use generic corporate language such as:
-innovation, strategic expansion, volatility management, strong growth, confidence.
+Rules:
+- No interpretation
+- No opinion
+- No summary
+- Only factual developments
+- One fact per line
+- Max 12 facts
 
-Every statement must tie directly to a specific news item provided.
+NEWS:
+{context}
+"""
 
-For each development:
-- State what happened (specific)
-- State operational consequence
-- State sourcing impact
-- State margin impact (estimate % where possible)
-- State CEO implication
+    response = client.responses.create(
+        model="gpt-4.1-mini",
+        input=prompt,
+        temperature=0.1,
+        max_output_tokens=800
+    )
 
-If detail is missing, explicitly say so.
+    return response.output_text.strip()
 
-Quantify wherever possible:
-- Making charge ranges
-- Gross margin bands
-- Inventory days effect
-- Supplier credit impact
+
+def derive_implications(facts: str) -> str:
+    prompt = f"""
+You are a jewellery industry operator.
+
+For EACH fact below, derive:
+
+1) Immediate operational consequence
+2) Sourcing implication
+3) Margin implication
+4) Working capital implication
+
+Do NOT repeat the fact wording.
+Be specific.
+If data missing, state limitation.
+
+FACTS:
+{facts}
+"""
+
+    response = client.responses.create(
+        model="gpt-4.1-mini",
+        input=prompt,
+        temperature=0.2,
+        max_output_tokens=1500
+    )
+
+    return response.output_text.strip()
+
+
+def generate_digest(news: List[Dict]) -> str:
+
+    facts = extract_atomic_facts(news)
+    implications = derive_implications(facts)
+
+    prompt = f"""
+You are training a sourcing head to become CEO.
+
+You must NOT repeat the same development across sections.
+Each section must focus on different implications.
+
+No corporate filler.
+No repetition.
+
+Every section must draw from different parts of the implications text.
 
 HTML ONLY.
-Every paragraph inside <p>.
-Every section title inside <h2>.
-No markdown.
-No emojis.
+Each paragraph inside <p>.
+Each section title inside <h2>.
 
-MANDATORY SECTIONS:
+SECTIONS:
 
 <h2>Executive Signal (3 Minutes)</h2>
+Summarize 3 most strategic implications only.
+
 <h2>Commodity & Capital Impact</h2>
+Focus only on cost structure shifts.
+
 <h2>Supplier Power & Risk Map</h2>
+Focus only on bargaining power and credit.
+
 <h2>Retail & Consumer Shift</h2>
+Focus only on SKU and buyer behavior.
+
 <h2>Product Intelligence Deep Dive</h2>
+Choose one product affected and dissect fully.
+
 <h2>Margin & Working Capital Lens</h2>
+Scenario-based financial thinking.
+
 <h2>CEO Capital Allocation View</h2>
+Where capital should and should NOT go.
+
 <h2>Strategic Question for You</h2>
+
 <h2>Action for Today (Sourcing Head Mode)</h2>
 
-NEWS INPUT:
-{structured_context}
+IMPLICATIONS INPUT:
+{implications}
 """
 
     response = client.responses.create(
@@ -265,6 +310,7 @@ NEWS INPUT:
         raise ValueError("Digest failed structural validation.")
 
     return sanitize_html(html)
+
 
 
 # =========================================================
