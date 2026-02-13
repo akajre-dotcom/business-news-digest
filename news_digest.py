@@ -148,22 +148,27 @@ def sanitize_html(html: str) -> str:
 def generate_digest(news: List[Dict]) -> str:
 
     context = "\n".join(
-        f"- TITLE: {i['title']}\n  SOURCE: {i['source']}\n  SUMMARY: {i['summary']}\n"
+        f"- TITLE: {i['title']}\n"
+        f"  SOURCE: {i['source']}\n"
+        f"  SUMMARY: {i['summary']}\n"
         for i in news[:30]
+    )
+
+    # Select top 5 editorial candidates by score
+    top5 = sorted(news, key=lambda x: x["score"], reverse=True)[:5]
+
+    editorial_context = "\n".join(
+        f"- TITLE: {i['title']}\n  LINK: {i['link']}\n"
+        for i in top5
     )
 
     prompt = f"""
 You are a master of the global jewellery industry.
 
-Use only the relevant developments below.
-Ignore weak or trivial news.
-
-No repetition of the same company across more than two sections.
-
-No corporate filler language.
-Every claim must connect to a real development from the input.
-
-If signal concentration is narrow today, state that clearly.
+Use only relevant developments.
+Avoid repetition.
+No filler language.
+If signal concentration is narrow, state it clearly.
 
 HTML only.
 Each paragraph wrapped in <p>.
@@ -182,15 +187,28 @@ MANDATORY SECTIONS:
 <h2>Strategic Question of the Day</h2>
 <h2>Procurement → CEO Lens</h2>
 
+After completing all above sections, add:
+
+<h2>Top 5 Must-Read Today (With Why It Matters)</h2>
+
+For each of the 5 links below:
+- Embed hyperlink properly using <a href="URL">Headline</a>
+- Provide 1–2 lines explaining why it is important for CEO / procurement thinking
+- Do not end paragraph with hyperlink
+- Do not repeat analysis already written above
+
 NEWS INPUT:
 {context}
+
+TOP 5 LINKS:
+{editorial_context}
 """
 
     response = client.responses.create(
         model="gpt-4.1-mini",
         input=prompt,
         temperature=0.25,
-        max_output_tokens=3500
+        max_output_tokens=3800
     )
 
     html = response.output_text.strip()
